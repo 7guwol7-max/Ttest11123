@@ -50,7 +50,7 @@ function startBattle(opts){
  mode='battle';keys={};path=[];dialog=null;$('#dialog').hidden=true;MENU=null;$('#menuui').hidden=true;
  Music.sfx('encounter');
  const b=B;
- trans={t0:performance.now(),dur:600,kind:'swirl',mid:()=>{if(B!==b)return;b.shown=true;Music.play(b.boss?'boss':'battle');$('#battleui').hidden=false;$('#questbox').hidden=true;bParty();runBattle()}};
+ trans={t0:performance.now(),dur:600,kind:'swirl',mid:()=>{if(B!==b)return;b.shown=true;Music.play(b.boss?'boss':'battle');$('#battleui').hidden=false;bParty();runBattle()}};
 }
 async function runBattle(){
  const b=B;
@@ -65,7 +65,7 @@ function endBattle(result){
  const b=B;if(!b)return;b.over=true;b.waiting=null;b.mini=null;
  const ent=b.opts.ent;
  trans={t0:performance.now(),dur:500,kind:'fade',mid:()=>{
-  $('#battleui').hidden=true;$('#questbox').hidden=false;$('#bcmd').innerHTML='';
+  $('#battleui').hidden=true;$('#bcmd').innerHTML='';
   B=null;mode=dialog?'dialog':'field';cooldown=performance.now()+2000;
   if(result==='lose'){const s=startOf(S.stage);pl.x=s[0];pl.y=s[1];pl.dir='down';loadStage()}
   else if(result==='win'){refreshEnts()}
@@ -113,7 +113,7 @@ function battleGuard(t){
  if(B.mini||B.waiting||B.over)B.lastTick=t;
  else if(B.lastTick&&t-B.lastTick>8000&&!trans){B.lastTick=t;B.act=null;B.eact=null;console.warn('battle watchdog: restarting turn loop');runBattle()}
  if(B.waiting&&!$('#bcmd').querySelector('.choice'))renderAsk();
- if($('#battleui').hidden){$('#battleui').hidden=false;$('#questbox').hidden=true}
+ if($('#battleui').hidden){$('#battleui').hidden=false}
 }
 
 // ---------- 상태창 ----------

@@ -72,7 +72,7 @@ function teacherReportText(){
 // ---------- 진행 이동 ----------
 function abortAll(){
  if(B){B.over=true;B.waiting=null;B.mini=null}B=null;TR=null;dialog=null;MENU=null;trans=null;
- ['#battleui','#trialui','#menuui','#dialog'].forEach(s=>{const e=$(s);if(e)e.hidden=true});$('#questbox').hidden=false;$('#bcmd').innerHTML='';
+ ['#battleui','#trialui','#menuui','#dialog'].forEach(s=>{const e=$(s);if(e)e.hidden=true});$('#bcmd').innerHTML='';
  if($('#splash')){$('#splash').remove();Music.setEnabled(S.sound)}
  keys={};path=[];pendingTarget=null;mode='field';
 }
@@ -145,7 +145,7 @@ function openTeacher(){
  const first=TEACHER_EXT.length?TEACHER_EXT[0].key:'move';
  openModal(`<h2>교사용 메뉴</h2><p>교사용 비밀번호를 입력하세요.${TEA.pin==='1234'?' <span class="muted">(처음 비밀번호: 1234 — 설정 탭에서 꼭 바꿔 주세요)</span>':''}</p>
   <div class="trow"><input id="tpin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="교사용 비밀번호"><button id="tpinok">들어가기</button></div><p class="muted" id="tpinmsg"></p>
-  <p class="muted">학생이 실수로 들어오지 않게 막는 간단한 잠금입니다(보안 기능은 아니에요).</p>`);
+  <p class="muted">이 비밀번호는 <b>이 기기(브라우저)</b>에만 저장되는 간단한 잠금이에요. 학생이 실수로 들어오지 않게 막는 용도이며 보안 기능은 아니에요.</p>`);
  const go=()=>{if($('#tpin').value===TEA.pin){try{sessionStorage.setItem('teach-ok','1')}catch{}teacherPanel(first)}else{$('#tpinmsg').textContent='비밀번호가 맞지 않아요.';$('#tpin').value=''}};
  $('#tpinok').onclick=go;$('#tpin').addEventListener('keydown',e=>{if(e.key==='Enter')go()});setTimeout(()=>$('#tpin')&&$('#tpin').focus(),50);
 }
@@ -212,7 +212,7 @@ function teacherPanel(tab){
   <p class="muted">기록은 학생마다 각자 기기에 저장됩니다. 학생은 엔딩의 「원정 기록 내려받기」 파일로 정답률과 다시 볼 문제를 제출할 수 있어요.</p>`;
  }
  if(tab==='set'){
-  h+=`<h3>비밀번호 바꾸기</h3><div class="trow"><input id="p1" type="password" inputmode="numeric" maxlength="8" placeholder="새 비밀번호 (숫자 4~8자리)"><input id="p2" type="password" inputmode="numeric" maxlength="8" placeholder="한 번 더"><button id="p-save">바꾸기</button><span id="p-msg" class="tmsg"></span></div>
+  h+=`<h3>교사 메뉴 비밀번호 바꾸기 <small>(이 기기에만 저장)</small></h3><div class="trow"><input id="p1" type="password" inputmode="numeric" maxlength="8" placeholder="새 비밀번호 (숫자 4~8자리)"><input id="p2" type="password" inputmode="numeric" maxlength="8" placeholder="한 번 더"><button id="p-save">바꾸기</button><span id="p-msg" class="tmsg"></span></div>
   <h3>정리</h3><div class="trow"><button id="t-lock">교사 메뉴 잠그기</button><button id="t-resetcls">선생님 설정 초기화 (문제·난이도)</button></div>`;
  }
  const ext=TEACHER_EXT.find(e=>e.key===tab);if(ext)h+=ext.render();

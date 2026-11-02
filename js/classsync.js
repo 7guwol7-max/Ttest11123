@@ -56,9 +56,11 @@ function classSyncHook(){
  clearTimeout(pushT);setStatus('저장 중…');
  pushT=setTimeout(async()=>{try{const ts=await pushClass();SY.lastTs=ts;saveSync();setStatus('학생 화면에 반영됨 ✓ '+new Date().toLocaleTimeString('ko-KR'))}catch(e){setStatus('저장하지 못했어요 — 인터넷 연결을 확인해 주세요 ('+e.message+')',false)}},600);
 }
-async function createClass(){
+async function createClass(myKey){
+ myKey=String(myKey||'').trim();
+ if(myKey&&(myKey.length<8||myKey.length>40))throw new Error('반 비밀번호는 8~40자로 정해 주세요.');
  for(let i=0;i<5;i++){
-  const code=randStr(6),key=randStr(10);
+  const code=randStr(6),key=myKey||randStr(10);
   SY={role:'teacher',code,key,lastTs:null,lastStart:null};
   try{const ts=await pushClass();SY.lastTs=ts;saveSync();subscribe();return SY}
   catch(e){if(!/wrong key/.test(e.message)){SY={role:null,code:null};saveSync();throw e}}
@@ -66,9 +68,9 @@ async function createClass(){
  throw new Error('반 코드를 만들지 못했어요. 다시 눌러 주세요.');
 }
 async function connectTeacher(code,key){
- code=normCode(code);key=String(key||'').trim().toUpperCase();
+ code=normCode(code);key=String(key||'').trim();
  const c=await client();const {data,error}=await c.rpc('rpg_check_class',{p_code:code,p_key:key});
- if(error)throw new Error(error.message);if(!data)throw new Error('반 코드나 교사 키가 맞지 않아요.');
+ if(error)throw new Error(error.message);if(!data)throw new Error('반 코드나 반 비밀번호가 맞지 않아요. (대소문자 구분)');
  const row=await fetchRow(code);
  SY={role:'teacher',code,key,lastTs:row&&row.updated_at,lastStart:null};saveSync();
  if(row){SYNC_APPLYING=true;try{CLS=cleanClass(row.data);saveClass();QORDER_RESET()}finally{SYNC_APPLYING=false}}
@@ -85,15 +87,18 @@ TEACHER_EXT.push({key:'class',name:'우리 반 연결',
  render(){
   if(SY.role!=='teacher')return `<h3>우리 반 연결 <small>(서버에 저장해 학생 화면에 실시간 반영)</small></h3>
    <p>반을 만들면 <b>반 코드</b>가 생겨요. 학생은 첫 화면에 반 코드를 넣거나 입장 주소로 들어오면 되고, 선생님이 문제를 넣고 고칠 때마다 학생 화면에 바로 반영돼요.</p>
-   <div class="trow"><button id="cs-new" class="primary">새 반 만들기</button><span id="cs-status" class="tmsg"></span></div>
+   <p class="muted">선생님마다 자기 반을 따로 만들고, 반마다 <b>반 비밀번호</b>를 정해요. 비밀번호는 서버에 암호화(해시)되어 저장되고, 그 비밀번호를 아는 선생님만 그 반의 문제를 바꿀 수 있어요.</p>
+   <div class="trow"><input id="cs-newkey" type="password" maxlength="40" placeholder="반 비밀번호 정하기 (8자 이상)" aria-label="새 반 비밀번호" autocomplete="new-password"><input id="cs-newkey2" type="password" maxlength="40" placeholder="한 번 더" aria-label="반 비밀번호 확인" autocomplete="new-password"><button id="cs-new" class="primary">새 반 만들기</button></div>
+   <p class="muted">비워 두면 비밀번호를 자동으로 만들어 드려요(연결 후 「보기」로 확인).</p>
+   <div class="trow"><span id="cs-status" class="tmsg"></span></div>
    <h3>이미 만든 반에 다시 연결</h3>
-   <div class="trow"><input id="cs-code" maxlength="6" placeholder="반 코드 6글자" aria-label="반 코드"><input id="cs-key" maxlength="20" placeholder="교사 키" aria-label="교사 키"><button id="cs-conn">연결</button></div>
-   <p class="muted">서버에는 문제·출제 방식·난이도·시작 장만 저장돼요. 학생 이름이나 기록은 저장하지 않습니다. 교사 키를 아는 사람만 문제를 바꿀 수 있어요.</p>`;
+   <div class="trow"><input id="cs-code" maxlength="6" placeholder="반 코드 6글자" aria-label="반 코드"><input id="cs-key" type="password" maxlength="40" placeholder="반 비밀번호" aria-label="반 비밀번호" autocomplete="current-password"><button id="cs-conn">연결</button></div>
+   <p class="muted">서버에는 문제·출제 방식·난이도·시작 장만 저장돼요. 학생 이름이나 기록은 저장하지 않습니다.</p>`;
   return `<h3>우리 반 연결됨</h3>
    <div class="bigcode">${SY.code}</div>
    <p>학생 입장: 첫 화면에 <b>반 코드 ${SY.code}</b> 입력, 또는 아래 주소로 접속</p>
    <div class="trow"><input id="cs-url" readonly value="${escH(joinUrl(SY.code))}" style="flex:1;min-width:240px"><button id="cs-copy">주소 복사</button></div>
-   <p>교사 키: <b id="cs-keyv" class="secret">${'•'.repeat(10)}</b> <button id="cs-show" class="mini">보기</button> <span class="muted">— 다른 기기에서 이 반을 고치려면 반 코드와 교사 키가 필요해요. 꼭 적어 두세요.</span></p>
+   <p>반 비밀번호: <b id="cs-keyv" class="secret">${'•'.repeat(10)}</b> <button id="cs-show" class="mini">보기</button> <span class="muted">— 다른 기기에서 이 반을 고치려면 반 코드와 반 비밀번호가 필요해요. 잊으면 되찾을 수 없으니 꼭 적어 두세요.</span></p>
    <div class="trow"><label>학생 시작 장 <select id="cs-start"><option value="">학생 진행 그대로</option>${stageOpts(CLS.startStage)}</select></label></div>
    <p>선생님 문제 <b>${CLS.questions.length}개</b> · 난이도 <b>${DIFF[CLS.difficulty].name}</b> · ${CLS.mode==='only'?'선생님 문제 우선':'기본 문제와 섞어서'} — 「문제 관리」·「진행 이동」 탭에서 바꾸면 자동으로 저장돼요.</p>
    <div class="trow"><button id="cs-push" class="primary">지금 다시 저장</button><span id="cs-status" class="tmsg ${syncStatus.ok?'ok':'ng'}">${escH(syncStatus.text)}</span></div>
@@ -101,7 +106,7 @@ TEACHER_EXT.push({key:'class',name:'우리 반 연결',
  },
  bind(){
   const on=(id,fn)=>{const e=$(id);if(e)e.onclick=fn};
-  on('#cs-new',async()=>{setStatus('반을 만드는 중…');try{await createClass();teacherPanel('class');setStatus('반을 만들었어요! 학생에게 반 코드를 알려 주세요.')}catch(e){setStatus(e.message,false)}});
+  on('#cs-new',async()=>{const k1=$('#cs-newkey').value,k2=$('#cs-newkey2').value;if(k1!==k2){setStatus('두 번 입력한 비밀번호가 달라요.',false);return}setStatus('반을 만드는 중…');try{await createClass(k1);teacherPanel('class');setStatus('반을 만들었어요! 학생에게 반 코드를 알려 주세요.')}catch(e){setStatus(e.message,false)}});
   on('#cs-conn',async()=>{setStatus('연결 중…');try{await connectTeacher($('#cs-code').value,$('#cs-key').value);teacherPanel('class');setStatus('연결했어요! 이 반의 문제를 불러왔어요.')}catch(e){setStatus(e.message,false)}});
   on('#cs-copy',async()=>{try{await navigator.clipboard.writeText($('#cs-url').value);setStatus('주소를 복사했어요.')}catch{$('#cs-url').select();setStatus('칸을 길게 눌러 복사해 주세요.')}});
   on('#cs-show',()=>{$('#cs-keyv').textContent=SY.key||''});

@@ -55,7 +55,7 @@ function startTrial(practice){
  if(mode!=='field'||trans||B||TR)return;
  TR=initTrial();TR.practice=!!practice;mode='trial';keys={};path=[];
  Music.sfx('encounter');
- trans={t0:performance.now(),dur:600,kind:'swirl',mid:()=>{if(!TR)return;TR.shown=true;$('#questbox').hidden=true;Music.play('trial');trialIntroPanel()}};
+ trans={t0:performance.now(),dur:600,kind:'swirl',mid:()=>{if(!TR)return;TR.shown=true;Music.play('trial');trialIntroPanel()}};
 }
 // ----- 패널(메뉴) -----
 function trialPanel(html,buttons){
@@ -192,7 +192,7 @@ function retryTrial(){TR=initTrial();TR.shown=true;TR.phase='count';TR.count=2.5
 function exitTrial(cleared){
  if(!TR)return;TR.phase='exit';
  trans={t0:performance.now(),dur:600,kind:'fade',mid:()=>{
-  TR=null;$('#trialui').hidden=true;$('#questbox').hidden=false;mode='field';keys={};cooldown=performance.now()+800;
+  TR=null;$('#trialui').hidden=true;mode='field';keys={};cooldown=performance.now()+800;
   Music.play('field');hud();cv.focus();
   if(cleared){log(`외줄 수련 통과! ${ENEMY_NAMES[S.stage].boss}의 결계가 풀렸다.`,'gold');say([['sys',`결계가 완전히 풀렸다! 이제 ${ENEMY_NAMES[S.stage].boss}에게 도전하자.`]])}
   else log('외줄 수련터에서 물러났다. 준비되면 다시 도전하자.');

@@ -559,10 +559,10 @@ function guard(t){
  if(mode==='menu'&&!MENU)mode='field';
  if(!MENU&&!$('#menuui').hidden)$('#menuui').hidden=true;
  if(MENU&&mode!=='menu'){MENU=null;$('#menuui').hidden=true}
- if(mode!=='battle'&&!B&&!trans&&!bui.hidden){bui.hidden=true;$('#questbox').hidden=false}
- if(mode==='battle'&&!B&&!trans){mode='field';bui.hidden=true;$('#questbox').hidden=false;cooldown=t+1500}
+ if(mode!=='battle'&&!B&&!trans&&!bui.hidden){bui.hidden=true}
+ if(mode==='battle'&&!B&&!trans){mode='field';bui.hidden=true;cooldown=t+1500}
  if(mode==='battle'&&B&&!trans)battleGuard(t);
- if(mode==='trial'&&!TR&&!trans){mode='field';$('#trialui').hidden=true;$('#questbox').hidden=false}
+ if(mode==='trial'&&!TR&&!trans){mode='field';$('#trialui').hidden=true}
  if(mode!=='trial'&&TR&&!trans){TR=null;$('#trialui').hidden=true}
  if(mode!=='trial'&&!TR&&!$('#trialui').hidden)$('#trialui').hidden=true;
  if(TR&&TR.menu&&$('#trialui').hidden)$('#trialui').hidden=false;
@@ -670,7 +670,7 @@ $('#video').onclick=()=>openModal('<h2>학습 영상 · 웰컴 투 디지털 월
 $('#reset').onclick=()=>{openModal('<h2>새 원정을 시작할까요?</h2><p>경험치, 무기, 도구, 동료와 진행이 모두 초기화됩니다.</p><button id="keep">기록 유지</button> <button id="new">초기화하고 시작</button>');$('#keep').onclick=closeModal;$('#new').onclick=()=>{
  const snd=S.sound;S=fresh();S.sound=snd;MAZE=MAZE;pl.x=S.x;pl.y=S.y;pl.dir='down';try{localStorage.removeItem(KEY)}catch{}
  closeModal();trans=null;B=null;TR=null;dialog=null;MENU=null;floaters=[];
- $('#battleui').hidden=true;$('#questbox').hidden=false;$('#dialog').hidden=true;$('#trialui').hidden=true;$('#menuui').hidden=true;
+ $('#battleui').hidden=true;$('#dialog').hidden=true;$('#trialui').hidden=true;$('#menuui').hidden=true;
  if($('#splash'))$('#splash').remove();
  mode='field';loadStage();chapterCard();Music.play('field');save();log('새 원정을 시작했다.','gold');introHint();cv.focus()}};
 function introHint(){setTimeout(()=>{if(mode==='field'&&!S.talked&&S.stage===0&&!dialog&&!B&&!trans&&!$('#modal').open)say([['baram','하아암~ 잘 잤다. …응? 사부님이 길 위에서 손짓하고 계시네.'],['sys','방향키(WASD)로 걸어가서 Space로 말을 걸자. 노란 화살표가 목표야!']])},1600)}

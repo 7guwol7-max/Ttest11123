@@ -15,7 +15,7 @@
 [hidden]{display:none!important}
 html,body{margin:0;background:radial-gradient(circle at 50% 0%,#3a2716,#140d08 70%);color:var(--ink);font-family:NeoDunggeunmo,"Galmuri11","DungGeunMo",monospace;min-height:100vh}
 button{font:inherit;color:inherit;cursor:pointer}
-.client{width:min(980px,100%,calc((100vh - 250px) * 1.5 + 20px));min-width:min(100%,560px);margin:8px auto;background:#2a1d12;border:3px solid var(--frame);box-shadow:0 0 0 3px #1a0f07,0 0 0 6px var(--frame2),0 18px 50px #000a;padding:0 8px 6px}
+.client{width:min(980px,100%,calc((100vh - 290px) * 1.5 + 20px));min-width:min(100%,560px);margin:8px auto;background:#2a1d12;border:3px solid var(--frame);box-shadow:0 0 0 3px #1a0f07,0 0 0 6px var(--frame2),0 18px 50px #000a;padding:0 8px 6px}
 header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 4px;flex-wrap:wrap}
 .title{font-size:26px;color:var(--gold);text-shadow:2px 2px 0 #7a2a10,4px 4px 0 #2a0f05;letter-spacing:3px}
 .title span{font-size:14px;color:var(--muted);text-shadow:none;letter-spacing:1px;margin-left:6px}
@@ -26,12 +26,14 @@ nav button:hover,.hotkeys button:hover,dialog button:hover{filter:brightness(1.2
 #game{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;outline:none}
 .win{background:linear-gradient(180deg,var(--win1),var(--win2));border:3px solid var(--winb);border-radius:6px;box-shadow:0 0 0 2px #0b0f30,inset 0 0 0 1px #6a7ad8,3px 4px 0 #0008;color:#fff}
 .zone{position:absolute;top:1.5cqw;left:50%;transform:translateX(-50%);padding:.5cqw 2cqw;font-size:clamp(11px,2.2cqw,20px);pointer-events:none;transition:opacity .6s}
-.quest{position:absolute;top:1.2cqw;left:50%;transform:translateX(-50%);max-width:72cqw;width:max-content;padding:.7cqw 1.6cqw;font-size:clamp(10px,1.6cqw,15px);line-height:1.45;pointer-events:none;text-align:center;opacity:.93}
-.quest span{color:#c9cdf0}
-.quest br{display:none}
-.quest span::before{content:' · '}
 .zone{display:none}
-.quest b{color:var(--gold);display:block;margin-bottom:.15em;font-weight:normal}
+/* 임무 줄(게임 화면 바깥 위) — 맵을 가리지 않음 */
+.questbar{display:flex;box-sizing:border-box;align-items:baseline;gap:.4em .8em;flex-wrap:wrap;margin:0 0 6px;padding:5px 12px;background:linear-gradient(180deg,var(--win1),var(--win2));border:2px solid var(--winb);border-radius:5px;color:#fff;font-size:14px;line-height:1.45;min-height:32px}
+.questbar b{color:var(--gold);font-weight:normal;white-space:nowrap}
+.questbar #quest{flex:1;min-width:0}
+.questbar #quest br{display:none}
+.questbar #quest span{color:#c9cdf0}
+.questbar #quest span::before{content:' · '}
 /* 대화창 */
 .dialog{position:absolute;left:2cqw;right:2cqw;bottom:2cqw;min-height:20cqw;display:flex;gap:2cqw;padding:1.6cqw 2cqw;align-items:flex-start;cursor:pointer;animation:pop .15s ease-out}
 .dialog #face{width:14cqw;height:14cqw;min-width:56px;min-height:56px;image-rendering:pixelated;background:#0d1442;border:2px solid var(--winb);border-radius:4px;flex:none}
@@ -154,7 +156,8 @@ textarea{width:100%;min-height:80px;font:inherit;background:#0c1550;color:#fff;b
   .title{font-size:20px}
   .card canvas{width:32px;height:32px}
   .bparty{width:36cqw}
-  .quest{white-space:normal}
+  .questbar{font-size:12px;height:calc(2.9em + 10px);align-content:center;overflow:hidden}
+  .questbar #quest{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .bcmd{min-height:0;padding:1cqw 1.4cqw;font-size:clamp(10px,2.6cqw,15px)}
   .bcmd .q{margin:0 0 .3em;line-height:1.35}
   .cmds{grid-template-columns:1fr 1fr 1fr;gap:.15em .4em}
@@ -228,11 +231,12 @@ details{margin-top:10px;font-size:14px}details summary{cursor:pointer;color:var(
     </nav>
   </header>
 
+  <div class="questbar" id="questbox" aria-live="polite"><b id="qtitle">임무</b><span id="quest"></span></div>
+
   <section class="screen" id="screen">
     <canvas id="game" width="480" height="320" tabindex="0" aria-label="게임 화면. 방향키 또는 WASD 이동, Space 대화 및 결정"></canvas>
 
     <div class="chapter" id="chapter" hidden><small id="chapNo"></small><b id="chapName"></b><span id="chapDesc"></span></div>
-    <div class="quest win" id="questbox"><b id="qtitle">임무</b><div id="quest"></div></div>
     <div class="zone" id="zone" hidden></div>
 
     <!-- 대화창 -->
@@ -817,7 +821,7 @@ function startTrial(practice){
  if(mode!=='field'||trans||B||TR)return;
  TR=initTrial();TR.practice=!!practice;mode='trial';keys={};path=[];
  Music.sfx('encounter');
- trans={t0:performance.now(),dur:600,kind:'swirl',mid:()=>{if(!TR)return;TR.shown=true;$('#questbox').hidden=true;Music.play('trial');trialIntroPanel()}};
+ trans={t0:performance.now(),dur:600,kind:'swirl',mid:()=>{if(!TR)return;TR.shown=true;Music.play('trial');trialIntroPanel()}};
 }
 // ----- 패널(메뉴) -----
 function trialPanel(html,buttons){
@@ -954,7 +958,7 @@ function retryTrial(){TR=initTrial();TR.shown=true;TR.phase='count';TR.count=2.5
 function exitTrial(cleared){
  if(!TR)return;TR.phase='exit';
  trans={t0:performance.now(),dur:600,kind:'fade',mid:()=>{
-  TR=null;$('#trialui').hidden=true;$('#questbox').hidden=false;mode='field';keys={};cooldown=performance.now()+800;
+  TR=null;$('#trialui').hidden=true;mode='field';keys={};cooldown=performance.now()+800;
   Music.play('field');hud();cv.focus();
   if(cleared){log(`외줄 수련 통과! ${ENEMY_NAMES[S.stage].boss}의 결계가 풀렸다.`,'gold');say([['sys',`결계가 완전히 풀렸다! 이제 ${ENEMY_NAMES[S.stage].boss}에게 도전하자.`]])}
   else log('외줄 수련터에서 물러났다. 준비되면 다시 도전하자.');
@@ -1151,7 +1155,7 @@ function startBattle(opts){
  mode='battle';keys={};path=[];dialog=null;$('#dialog').hidden=true;MENU=null;$('#menuui').hidden=true;
  Music.sfx('encounter');
  const b=B;
- trans={t0:performance.now(),dur:600,kind:'swirl',mid:()=>{if(B!==b)return;b.shown=true;Music.play(b.boss?'boss':'battle');$('#battleui').hidden=false;$('#questbox').hidden=true;bParty();runBattle()}};
+ trans={t0:performance.now(),dur:600,kind:'swirl',mid:()=>{if(B!==b)return;b.shown=true;Music.play(b.boss?'boss':'battle');$('#battleui').hidden=false;bParty();runBattle()}};
 }
 async function runBattle(){
  const b=B;
@@ -1166,7 +1170,7 @@ function endBattle(result){
  const b=B;if(!b)return;b.over=true;b.waiting=null;b.mini=null;
  const ent=b.opts.ent;
  trans={t0:performance.now(),dur:500,kind:'fade',mid:()=>{
-  $('#battleui').hidden=true;$('#questbox').hidden=false;$('#bcmd').innerHTML='';
+  $('#battleui').hidden=true;$('#bcmd').innerHTML='';
   B=null;mode=dialog?'dialog':'field';cooldown=performance.now()+2000;
   if(result==='lose'){const s=startOf(S.stage);pl.x=s[0];pl.y=s[1];pl.dir='down';loadStage()}
   else if(result==='win'){refreshEnts()}
@@ -1214,7 +1218,7 @@ function battleGuard(t){
  if(B.mini||B.waiting||B.over)B.lastTick=t;
  else if(B.lastTick&&t-B.lastTick>8000&&!trans){B.lastTick=t;B.act=null;B.eact=null;console.warn('battle watchdog: restarting turn loop');runBattle()}
  if(B.waiting&&!$('#bcmd').querySelector('.choice'))renderAsk();
- if($('#battleui').hidden){$('#battleui').hidden=false;$('#questbox').hidden=true}
+ if($('#battleui').hidden){$('#battleui').hidden=false}
 }
 
 // ---------- 상태창 ----------
@@ -2196,10 +2200,10 @@ function guard(t){
  if(mode==='menu'&&!MENU)mode='field';
  if(!MENU&&!$('#menuui').hidden)$('#menuui').hidden=true;
  if(MENU&&mode!=='menu'){MENU=null;$('#menuui').hidden=true}
- if(mode!=='battle'&&!B&&!trans&&!bui.hidden){bui.hidden=true;$('#questbox').hidden=false}
- if(mode==='battle'&&!B&&!trans){mode='field';bui.hidden=true;$('#questbox').hidden=false;cooldown=t+1500}
+ if(mode!=='battle'&&!B&&!trans&&!bui.hidden){bui.hidden=true}
+ if(mode==='battle'&&!B&&!trans){mode='field';bui.hidden=true;cooldown=t+1500}
  if(mode==='battle'&&B&&!trans)battleGuard(t);
- if(mode==='trial'&&!TR&&!trans){mode='field';$('#trialui').hidden=true;$('#questbox').hidden=false}
+ if(mode==='trial'&&!TR&&!trans){mode='field';$('#trialui').hidden=true}
  if(mode!=='trial'&&TR&&!trans){TR=null;$('#trialui').hidden=true}
  if(mode!=='trial'&&!TR&&!$('#trialui').hidden)$('#trialui').hidden=true;
  if(TR&&TR.menu&&$('#trialui').hidden)$('#trialui').hidden=false;
@@ -2307,7 +2311,7 @@ $('#video').onclick=()=>openModal('<h2>학습 영상 · 웰컴 투 디지털 월
 $('#reset').onclick=()=>{openModal('<h2>새 원정을 시작할까요?</h2><p>경험치, 무기, 도구, 동료와 진행이 모두 초기화됩니다.</p><button id="keep">기록 유지</button> <button id="new">초기화하고 시작</button>');$('#keep').onclick=closeModal;$('#new').onclick=()=>{
  const snd=S.sound;S=fresh();S.sound=snd;MAZE=MAZE;pl.x=S.x;pl.y=S.y;pl.dir='down';try{localStorage.removeItem(KEY)}catch{}
  closeModal();trans=null;B=null;TR=null;dialog=null;MENU=null;floaters=[];
- $('#battleui').hidden=true;$('#questbox').hidden=false;$('#dialog').hidden=true;$('#trialui').hidden=true;$('#menuui').hidden=true;
+ $('#battleui').hidden=true;$('#dialog').hidden=true;$('#trialui').hidden=true;$('#menuui').hidden=true;
  if($('#splash'))$('#splash').remove();
  mode='field';loadStage();chapterCard();Music.play('field');save();log('새 원정을 시작했다.','gold');introHint();cv.focus()}};
 function introHint(){setTimeout(()=>{if(mode==='field'&&!S.talked&&S.stage===0&&!dialog&&!B&&!trans&&!$('#modal').open)say([['baram','하아암~ 잘 잤다. …응? 사부님이 길 위에서 손짓하고 계시네.'],['sys','방향키(WASD)로 걸어가서 Space로 말을 걸자. 노란 화살표가 목표야!']])},1600)}
@@ -2410,7 +2414,7 @@ function teacherReportText(){
 // ---------- 진행 이동 ----------
 function abortAll(){
  if(B){B.over=true;B.waiting=null;B.mini=null}B=null;TR=null;dialog=null;MENU=null;trans=null;
- ['#battleui','#trialui','#menuui','#dialog'].forEach(s=>{const e=$(s);if(e)e.hidden=true});$('#questbox').hidden=false;$('#bcmd').innerHTML='';
+ ['#battleui','#trialui','#menuui','#dialog'].forEach(s=>{const e=$(s);if(e)e.hidden=true});$('#bcmd').innerHTML='';
  if($('#splash')){$('#splash').remove();Music.setEnabled(S.sound)}
  keys={};path=[];pendingTarget=null;mode='field';
 }
@@ -2483,7 +2487,7 @@ function openTeacher(){
  const first=TEACHER_EXT.length?TEACHER_EXT[0].key:'move';
  openModal(`<h2>교사용 메뉴</h2><p>교사용 비밀번호를 입력하세요.${TEA.pin==='1234'?' <span class="muted">(처음 비밀번호: 1234 — 설정 탭에서 꼭 바꿔 주세요)</span>':''}</p>
   <div class="trow"><input id="tpin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="교사용 비밀번호"><button id="tpinok">들어가기</button></div><p class="muted" id="tpinmsg"></p>
-  <p class="muted">학생이 실수로 들어오지 않게 막는 간단한 잠금입니다(보안 기능은 아니에요).</p>`);
+  <p class="muted">이 비밀번호는 <b>이 기기(브라우저)</b>에만 저장되는 간단한 잠금이에요. 학생이 실수로 들어오지 않게 막는 용도이며 보안 기능은 아니에요.</p>`);
  const go=()=>{if($('#tpin').value===TEA.pin){try{sessionStorage.setItem('teach-ok','1')}catch{}teacherPanel(first)}else{$('#tpinmsg').textContent='비밀번호가 맞지 않아요.';$('#tpin').value=''}};
  $('#tpinok').onclick=go;$('#tpin').addEventListener('keydown',e=>{if(e.key==='Enter')go()});setTimeout(()=>$('#tpin')&&$('#tpin').focus(),50);
 }
@@ -2550,7 +2554,7 @@ function teacherPanel(tab){
   <p class="muted">기록은 학생마다 각자 기기에 저장됩니다. 학생은 엔딩의 「원정 기록 내려받기」 파일로 정답률과 다시 볼 문제를 제출할 수 있어요.</p>`;
  }
  if(tab==='set'){
-  h+=`<h3>비밀번호 바꾸기</h3><div class="trow"><input id="p1" type="password" inputmode="numeric" maxlength="8" placeholder="새 비밀번호 (숫자 4~8자리)"><input id="p2" type="password" inputmode="numeric" maxlength="8" placeholder="한 번 더"><button id="p-save">바꾸기</button><span id="p-msg" class="tmsg"></span></div>
+  h+=`<h3>교사 메뉴 비밀번호 바꾸기 <small>(이 기기에만 저장)</small></h3><div class="trow"><input id="p1" type="password" inputmode="numeric" maxlength="8" placeholder="새 비밀번호 (숫자 4~8자리)"><input id="p2" type="password" inputmode="numeric" maxlength="8" placeholder="한 번 더"><button id="p-save">바꾸기</button><span id="p-msg" class="tmsg"></span></div>
   <h3>정리</h3><div class="trow"><button id="t-lock">교사 메뉴 잠그기</button><button id="t-resetcls">선생님 설정 초기화 (문제·난이도)</button></div>`;
  }
  const ext=TEACHER_EXT.find(e=>e.key===tab);if(ext)h+=ext.render();
