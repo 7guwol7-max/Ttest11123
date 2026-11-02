@@ -9,6 +9,10 @@ html=html.replace('<link rel="stylesheet" href="style.css">','<style>'+css+'</st
 def inline(m):
     return '<script>'+(root/m.group(1)).read_text(encoding='utf-8')+'</script>'
 html=re.sub(r'<script src="([^"]+)"></script>',inline,html)
+# 오프라인 파일에서도 엑셀 템플릿을 내려받을 수 있게 내장
+tpl=base64.b64encode((root/'assets/question-template.xlsx').read_bytes()).decode()
+assert "const QTEMPLATE_URL='assets/question-template.xlsx';" in html
+html=html.replace("const QTEMPLATE_URL='assets/question-template.xlsx';","const QTEMPLATE_URL='data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,"+tpl+"';")
 lic=(root/'assets/OFL-neodgm.txt').read_text(encoding='utf-8')
 html=html.replace('</body>','<script id="font-license" type="text/plain">'+lic.replace('</','<\\/')+'</script>\n</body>')
 out=root/'평등의나라_취풍무협전.html'

@@ -138,7 +138,23 @@ async function applyClassFromHash(){
 }
 
 // ---------- 화면 ----------
-let TTAB=null,EDITING=null;
+let TTAB=null,EDITING=null,IMPORT=null;
+function renderImport(){
+ const box=$('#q-preview');if(!box||!IMPORT)return;const r=IMPORT;
+ const mode=(document.querySelector('input[name="q-imode"]:checked')||{}).value||'add';
+ const room=mode==='replace'?200:200-CLS.questions.length;const n=Math.min(r.ok.length,Math.max(0,room));
+ const rows=[...r.ok.map(q=>({line:q.line,ok:true,q})),...r.bad.map(b=>({line:b.line,ok:false,b}))].sort((a,b)=>a.line-b.line);
+ const shown=rows.slice(0,80);
+ box.innerHTML=`<div class="pv"><p><b>${escH(r.name)}</b> — 올릴 수 있는 문제 <b class="ok">${r.ok.length}개</b>${r.bad.length?` · 고칠 줄 <b class="ng">${r.bad.length}개</b>`:''}${r.examples?` · 예시 줄 ${r.examples}개는 건너뜀`:''}${r.ok.length>n?` · 최대 200개라 ${n}개만 들어가요`:''}</p>
+  ${rows.length?`<div class="pvwrap"><table class="ttable pvt"><colgroup><col class="c1"><col class="c2"><col><col class="c4"><col class="c5"></colgroup><tr class="h"><th>줄</th><th>장</th><th>질문</th><th>보기 · 정답</th><th>확인</th></tr>${shown.map(x=>x.ok?`<tr><td>${x.line}</td><td>${x.q.stage==='all'?'전체':x.q.stage+1}</td><td class="l">${escH(x.q.text)}</td><td class="l">${x.q.choices.map((c,i)=>i===x.q.answer?`<b>${escH(c)}</b>`:escH(c)).join(' / ')}</td><td class="ok">✔${x.q.cut?' <small>(길어서 잘림)</small>':''}</td></tr>`:`<tr class="bad"><td>${x.line}</td><td>—</td><td class="l">${escH(x.b.text||'')}</td><td class="l ng" colspan="2">✖ ${escH(x.b.reason)}</td></tr>`).join('')}</table></div>${rows.length>shown.length?`<p class="muted">… 외 ${rows.length-shown.length}줄</p>`:''}`:'<p class="muted">읽을 문제가 없어요. 템플릿의 「문제」 시트에 적었는지 확인해 주세요.</p>'}
+  <div class="trow"><button id="q-imp" class="primary" ${n?'':'disabled'}>${mode==='replace'?`선생님 문제를 이 ${n}개로 바꾸기`:`${n}개 추가하기`}</button><button id="q-impcancel">취소</button>${r.bad.length?'<span class="muted">✖ 줄은 파일에서 고친 뒤 다시 올리면 돼요.</span>':''}</div></div>`;
+ document.querySelectorAll('input[name="q-imode"]').forEach(x=>x.onchange=renderImport);
+ $('#q-impcancel').onclick=()=>{IMPORT=null;box.innerHTML=''};
+ $('#q-imp').onclick=()=>{const qs=r.ok.slice(0,n).map(({line,cut,...q})=>q);
+  if(mode==='replace'){if(CLS.questions.length&&!confirm(`지금 있는 선생님 문제 ${CLS.questions.length}개를 지우고 ${qs.length}개로 바꿀까요?`))return;CLS.questions=qs;PRIORITY=[]}
+  else CLS.questions.push(...qs);
+  saveClass();IMPORT=null;teacherPanel('quiz');msg('#q-msg',`파일에서 문제 ${qs.length}개를 ${mode==='replace'?'바꿔 넣었어요':'추가했어요'}! 지금부터 ${CLS.mode==='only'?'선생님 문제만':'기본 문제와 섞여서'} 출제돼요. 당장 내고 싶은 문제는 아래 목록에서 「바로 출제」를 누르세요.`)};
+}
 function openTeacher(){
  let ok=false;try{ok=sessionStorage.getItem('teach-ok')==='1'}catch{}
  if(ok){teacherPanel(TTAB||(TEACHER_EXT.length?TEACHER_EXT[0].key:'move'));return}
@@ -171,15 +187,21 @@ function teacherPanel(tab){
  if(tab==='quiz'){
   const e=EDITING&&CLS.questions.find(q=>q.id===EDITING);
   const v=e||{stage:S.stage,text:'',choices:['','','',''],answer:0,explain:''};
-  h+=`<h3>${e?'문제 고치기':'문제 추가'}</h3>
+  h+=`<h3>엑셀·CSV 템플릿으로 한꺼번에 올리기</h3>
+  <p class="muted">① 템플릿을 내려받아 ② 한 줄에 한 문제씩 적고 ③ 파일을 올리면, 미리보기로 확인한 뒤 추가돼요. 구글 시트는 같은 열 순서로 적어 .xlsx나 CSV로 내려받아 올리면 돼요.</p>
+  <div class="trow"><a class="btnlink" id="q-tplx" href="${QTEMPLATE_URL}" download="평등의나라_문제_템플릿.xlsx">엑셀 템플릿 내려받기 (.xlsx)</a><button id="q-tplc">CSV 템플릿 내려받기</button><button id="q-export" ${CLS.questions.length?'':'disabled'}>지금 선생님 문제 내보내기 (CSV)</button></div>
+  <div class="trow"><label class="filebtn upbtn">📂 파일 올리기 (.xlsx · .csv)<input type="file" id="q-file" accept=".xlsx,.csv,.txt,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"></label>
+   <label class="chk inl"><input type="radio" name="q-imode" value="add" checked> 지금 문제에 더하기</label><label class="chk inl"><input type="radio" name="q-imode" value="replace"> 선생님 문제를 모두 바꾸기</label></div>
+  <div id="q-preview"></div>
+  <h3>${e?'문제 고치기':'문제 하나씩 추가'}</h3>
   <div class="trow"><label>장 <select id="q-st">${stageOpts(v.stage,true)}</select></label><label class="chk"><input type="checkbox" id="q-pri" checked> 다음 필살기에서 바로 출제</label></div>
   <label class="blk">질문<textarea id="q-text" maxlength="240" rows="2" placeholder="예) 친구가 놀림을 당할 때 할 수 있는 행동은?">${escH(v.text)}</textarea></label>
   <div class="qch">${[0,1,2,3].map(i=>`<label><input type="radio" name="q-ans" value="${i}" ${v.answer===i?'checked':''} aria-label="정답 ${i+1}"><input id="q-c${i}" maxlength="100" placeholder="보기 ${i+1}${i>=2?' (비워도 돼요)':''}" value="${escH(v.choices[i]||'')}"></label>`).join('')}</div>
   <p class="muted">동그라미를 눌러 정답을 고르세요. <button id="q-ox" class="mini">O/X 문제로 채우기</button></p>
   <label class="blk">해설 (틀렸을 때 보여 줄 말)<textarea id="q-exp" maxlength="300" rows="2">${escH(v.explain)}</textarea></label>
   <div class="trow"><button id="q-add" class="primary">${e?'고친 내용 저장':'문제 추가'}</button>${e?'<button id="q-cancel">고치기 취소</button>':''}<span id="q-msg" class="tmsg"></span></div>
-  <h3>여러 문제 한꺼번에 붙여넣기</h3>
-  <p class="muted">한 줄에 한 문제 — <b>장 | 질문 | 보기1 / 보기2 / 보기3 | 정답 번호 | 해설</b> (장은 1~5 또는 「전체」, 해설은 생략 가능)</p>
+  <h3>직접 붙여넣기</h3>
+  <p class="muted">엑셀·구글 시트에서 템플릿 표의 줄을 <b>복사해 그대로 붙여 넣어도</b> 되고, 한 줄에 <b>장 | 질문 | 보기1 / 보기2 / 보기3 | 정답 번호 | 해설</b> 형식으로 적어도 돼요.</p>
   <textarea id="q-bulk" rows="3" placeholder="1 | 단톡방에서 친구를 놀리는 글을 보면? | 같이 웃는다 / 멈추자고 말한다 / 다른 방에 퍼뜨린다 | 2 | 차별적인 말에는 동조하지 않아요."></textarea>
   <div class="trow"><button id="q-bulkadd">한꺼번에 추가</button><span id="q-bmsg" class="tmsg"></span></div>
   <h3>출제 방식</h3>
@@ -229,6 +251,7 @@ function readForm(){
  return {id:EDITING||newId(),stage:st==='all'?'all':+st,text:$('#q-text').value,choices:kept,answer:ans,explain:$('#q-exp').value};
 }
 function parseBulk(text){
+ if(text.includes('\t')){const r=rowsToQuestions(parseCSV(text));return {ok:r.ok.map(({line,cut,...q})=>q),bad:r.bad.map(b=>b.line)}}
  const ok=[],bad=[];
  text.split(/\r?\n/).forEach((line,n)=>{if(!line.trim())return;
   const p=line.split('|').map(s=>s.trim());
@@ -251,6 +274,11 @@ function bindTeacher(tab){
   on('#t-coin',()=>{S.coins+=500;save();hud();log('[교사] 냥 +500','gold');teacherPanel('move')});
  }
  if(tab==='quiz'){
+  const tplx=$('#q-tplx');if(tplx)tplx.onclick=e=>{e.preventDefault();fetch(QTEMPLATE_URL).then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()}).then(b=>qDownload('평등의나라_문제_템플릿.xlsx',b)).catch(()=>{const a=document.createElement('a');a.href=QTEMPLATE_URL;a.download='question-template.xlsx';document.body.appendChild(a);a.click();a.remove()})};
+  on('#q-tplc',()=>qDownload('평등의나라_문제_템플릿.csv',new Blob([questionsToCSV([],true)],{type:'text/csv;charset=utf-8'})));
+  on('#q-export',()=>qDownload('평등의나라_선생님문제.csv',new Blob([questionsToCSV(CLS.questions,false)],{type:'text/csv;charset=utf-8'})));
+  $('#q-file').onchange=async ev=>{const f=ev.target.files[0];ev.target.value='';if(!f)return;const box=$('#q-preview');box.innerHTML='<p class="muted">읽는 중…</p>';
+   try{const r=await readQuestionFile(f);IMPORT={name:f.name,...r};renderImport()}catch(err){IMPORT=null;box.innerHTML=`<p class="tmsg ng">${escH(err.message||'파일을 읽지 못했어요.')}</p>`}};
   on('#q-ox',()=>{$('#q-c0').value='O · 맞아요';$('#q-c1').value='X · 아니에요';$('#q-c2').value='';$('#q-c3').value=''});
   on('#q-add',()=>{const raw=readForm();const q=cleanQuestion(raw);
    if(!q){msg('#q-msg',!raw.text.trim()?'질문을 입력해 주세요.':raw.choices.length<2?'보기를 2개 이상 입력해 주세요.':'정답으로 고른 보기가 비어 있어요.',false);return}

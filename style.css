@@ -209,3 +209,22 @@ details{margin-top:10px;font-size:14px}details summary{cursor:pointer;color:var(
 @keyframes toast{0%{opacity:0;transform:translate(-50%,-8px)}8%{opacity:1;transform:translate(-50%,0)}85%{opacity:1}100%{opacity:0}}
 .bigcode{font-size:44px;letter-spacing:.25em;color:var(--gold);text-align:center;background:#0c1550;border:3px solid var(--gold);border-radius:8px;padding:6px 0;margin:6px 0}
 .secret{letter-spacing:.15em}
+
+/* 문제 템플릿 올리기 */
+a.btnlink{display:inline-block;background:linear-gradient(#5a3a1a,#3a240e);border:2px solid var(--frame);border-radius:3px;padding:5px 10px;font-size:13px;color:#fff;text-decoration:none}
+a.btnlink:hover{filter:brightness(1.25)}
+.filebtn.upbtn{background:linear-gradient(#ffd75e,#e09a2a);color:#3a1404;border-color:#fff3c4;font-size:14px}
+label.chk.inl{display:inline-flex;gap:4px;align-items:center;margin:0 6px}
+.pv{border:2px solid #6a7ad8;border-radius:6px;padding:8px 10px;margin:6px 0;background:#0c1550}
+.pv b.ok,.pvt .ok{color:#7be38a}.pv b.ng,.pvt .ng{color:#ff9a8a}
+.pvwrap{max-height:260px;overflow:auto}
+.pvt{width:100%;font-size:13px;table-layout:fixed}.pvt td.l{text-align:left;word-break:keep-all;overflow-wrap:anywhere}.pvt col.c1{width:3.4em}.pvt col.c2{width:3.4em}.pvt col.c4{width:38%}.pvt col.c5{width:4.6em}.pvt tr.bad td{background:#3a1a2a}
+.pvt th{position:sticky;top:0;background:#2a3f9e}
+@media (max-width:640px){
+ .pvt,.pvt tbody{display:block;width:100%}.pvt colgroup,.pvt tr.h{display:none}
+ .pvt tr{display:grid;grid-template-columns:auto auto 1fr;gap:3px 8px;padding:7px 6px;border-bottom:1px solid #4a5ac0}
+ .pvt td{display:block;border:0;padding:0;text-align:left}
+ .pvt td:nth-child(1)::before{content:'줄 ';color:#9aa6e8}.pvt td:nth-child(2)::before{content:'장 ';color:#9aa6e8}
+ .pvt td:nth-child(n+4){grid-column:1/-1}.pvt td:nth-child(4){color:#cfd6ff}
+}
+#modal select,#modal input,#modal textarea{max-width:100%}

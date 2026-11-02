@@ -216,6 +216,25 @@ details{margin-top:10px;font-size:14px}details summary{cursor:pointer;color:var(
 @keyframes toast{0%{opacity:0;transform:translate(-50%,-8px)}8%{opacity:1;transform:translate(-50%,0)}85%{opacity:1}100%{opacity:0}}
 .bigcode{font-size:44px;letter-spacing:.25em;color:var(--gold);text-align:center;background:#0c1550;border:3px solid var(--gold);border-radius:8px;padding:6px 0;margin:6px 0}
 .secret{letter-spacing:.15em}
+
+/* 문제 템플릿 올리기 */
+a.btnlink{display:inline-block;background:linear-gradient(#5a3a1a,#3a240e);border:2px solid var(--frame);border-radius:3px;padding:5px 10px;font-size:13px;color:#fff;text-decoration:none}
+a.btnlink:hover{filter:brightness(1.25)}
+.filebtn.upbtn{background:linear-gradient(#ffd75e,#e09a2a);color:#3a1404;border-color:#fff3c4;font-size:14px}
+label.chk.inl{display:inline-flex;gap:4px;align-items:center;margin:0 6px}
+.pv{border:2px solid #6a7ad8;border-radius:6px;padding:8px 10px;margin:6px 0;background:#0c1550}
+.pv b.ok,.pvt .ok{color:#7be38a}.pv b.ng,.pvt .ng{color:#ff9a8a}
+.pvwrap{max-height:260px;overflow:auto}
+.pvt{width:100%;font-size:13px;table-layout:fixed}.pvt td.l{text-align:left;word-break:keep-all;overflow-wrap:anywhere}.pvt col.c1{width:3.4em}.pvt col.c2{width:3.4em}.pvt col.c4{width:38%}.pvt col.c5{width:4.6em}.pvt tr.bad td{background:#3a1a2a}
+.pvt th{position:sticky;top:0;background:#2a3f9e}
+@media (max-width:640px){
+ .pvt,.pvt tbody{display:block;width:100%}.pvt colgroup,.pvt tr.h{display:none}
+ .pvt tr{display:grid;grid-template-columns:auto auto 1fr;gap:3px 8px;padding:7px 6px;border-bottom:1px solid #4a5ac0}
+ .pvt td{display:block;border:0;padding:0;text-align:left}
+ .pvt td:nth-child(1)::before{content:'줄 ';color:#9aa6e8}.pvt td:nth-child(2)::before{content:'장 ';color:#9aa6e8}
+ .pvt td:nth-child(n+4){grid-column:1/-1}.pvt td:nth-child(4){color:#cfd6ff}
+}
+#modal select,#modal input,#modal textarea{max-width:100%}
 </style>
 </head>
 <body>
@@ -2340,6 +2359,139 @@ loadStage();hud();
 requestAnimationFrame(frame);
 window.__game={get TR(){return TR},startTrial,get keys(){return keys},get dialog(){return dialog},get trans(){return trans},get S(){return S},get mode(){return mode},get B(){return B},get ENTS(){return ENTS},get MENU(){return MENU},pl,interact,startBattle,walkable,bfs,get grid(){return grid},loadStage,refreshEnts,genMaze,penSolved,missionDone,tileSolid,entAt,save,hud};
 </script>
+<script>// 교사 문제 템플릿: 엑셀(.xlsx)·CSV 읽기, 엑셀에서 복사한 표 붙여넣기, CSV 템플릿·내보내기 만들기
+// 외부 라이브러리 없이 동작(엑셀 압축은 브라우저 내장 DecompressionStream으로 풂)
+const QTEMPLATE_URL='data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,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';
+const QHEAD=['장','질문','보기1','보기2','보기3','보기4','정답','해설'];
+const QOX=['O · 맞아요','X · 아니에요'];
+const QEXAMPLES=[
+ ['1','(예시) 단톡방에서 친구를 놀리는 글을 보았을 때 알맞은 행동은?','같이 웃는 이모티콘을 보낸다','멈추자고 말하거나 어른에게 알린다','다른 방에 퍼뜨린다','','2','차별적인 말에는 동조하지 않아요.'],
+ ['전체','(예시) 성별과 관계없이 좋아하는 색을 고를 수 있다.','','','','','O','누구나 자신의 취향을 가질 수 있어요.'],
+ ['2','(예시) 온라인에서 처음 만난 사람에게 이야기해도 괜찮은 것은?','우리 집 주소','다니는 학교 이름','좋아하는 게임 장르','','좋아하는 게임 장르','나를 알아볼 수 있는 신상정보는 알려 주지 않아요.']
+];
+
+// ---------- 엑셀(.xlsx = ZIP + XML) ----------
+async function qInflate(u8){const ds=new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return new Uint8Array(await new Response(ds).arrayBuffer())}
+function qUnzip(buf){
+ const dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength);let eocd=-1;
+ for(let i=buf.length-22;i>=Math.max(0,buf.length-65558);i--){if(dv.getUint32(i,true)===0x06054b50){eocd=i;break}}
+ if(eocd<0)throw new Error('엑셀 파일 구조를 읽지 못했어요.');
+ const n=dv.getUint16(eocd+10,true);let p=dv.getUint32(eocd+16,true);const files=new Map(),dec=new TextDecoder();
+ for(let k=0;k<n;k++){
+  if(dv.getUint32(p,true)!==0x02014b50)throw new Error('엑셀 파일 구조를 읽지 못했어요.');
+  const method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true),nlen=dv.getUint16(p+28,true),xlen=dv.getUint16(p+30,true),clen=dv.getUint16(p+32,true),off=dv.getUint32(p+42,true);
+  files.set(dec.decode(buf.subarray(p+46,p+46+nlen)).replace(/\\/g,'/'),{method,csize,off});p+=46+nlen+xlen+clen;
+ }
+ const find=name=>files.get(name)||[...files.entries()].find(([k])=>k.toLowerCase()===name.toLowerCase())?.[1];
+ return {async get(name){const f=find(name);if(!f)return null;const s=f.off+30+dv.getUint16(f.off+26,true)+dv.getUint16(f.off+28,true);const data=buf.subarray(s,s+f.csize);
+  const raw=f.method===0?data:f.method===8?await qInflate(data):null;if(!raw)throw new Error('지원하지 않는 엑셀 압축 방식이에요.');return new TextDecoder().decode(raw)}};
+}
+function qCol(letters){let n=0;for(const ch of letters.toUpperCase())n=n*26+(ch.charCodeAt(0)-64);return n-1}
+function qTexts(el){return [...el.getElementsByTagName('t')].filter(t=>!(t.parentNode&&t.parentNode.nodeName==='rPh')).map(t=>t.textContent).join('')}
+async function readXlsx(buf){
+ if(typeof DecompressionStream!=='function')throw new Error('이 브라우저는 엑셀 파일을 읽을 수 없어요. CSV로 저장해 올려 주세요.');
+ const z=qUnzip(buf),P=s=>new DOMParser().parseFromString(s||'<x/>','application/xml');
+ const wb=P(await z.get('xl/workbook.xml'));
+ const sheets=[...wb.getElementsByTagName('sheet')];if(!sheets.length)throw new Error('엑셀 시트를 찾지 못했어요.');
+ const sheet=sheets.find(s=>(s.getAttribute('name')||'').trim()==='문제')||sheets[0];
+ const rid=sheet.getAttribute('r:id')||sheet.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+ const rels=P(await z.get('xl/_rels/workbook.xml.rels'));
+ let target=([...rels.getElementsByTagName('Relationship')].find(r=>r.getAttribute('Id')===rid)||{getAttribute:()=>null}).getAttribute('Target')||'worksheets/sheet1.xml';
+ target=target.replace(/^\//,'').replace(/^xl\//,'');
+ const ssTxt=await z.get('xl/sharedStrings.xml');
+ const shared=ssTxt?[...P(ssTxt).getElementsByTagName('si')].map(qTexts):[];
+ const sx=P(await z.get('xl/'+target));
+ const rows=[];
+ for(const r of sx.getElementsByTagName('row')){
+  const ri=(+r.getAttribute('r')||rows.length+1)-1;const row=[];let ci=0;
+  for(const c of r.getElementsByTagName('c')){
+   const ref=c.getAttribute('r');if(ref)ci=qCol(ref.replace(/[0-9]/g,''));
+   const t=c.getAttribute('t'),vEl=c.getElementsByTagName('v')[0];let v='';
+   if(t==='s')v=vEl?shared[+vEl.textContent]??'':'';
+   else if(t==='inlineStr')v=qTexts(c);
+   else if(t==='b')v=vEl&&vEl.textContent==='1'?'TRUE':'FALSE';
+   else v=vEl?vEl.textContent:'';
+   if(/^-?\d+\.0+$/.test(v))v=v.replace(/\.0+$/,'');
+   row[ci]=v;ci++;
+  }
+  rows[ri]=row;
+ }
+ return Array.from(rows,r=>r||[]);
+}
+
+// ---------- CSV ----------
+function decodeText(buf){
+ let s=new TextDecoder('utf-8').decode(buf);
+ if(s.includes('�')){try{s=new TextDecoder('euc-kr').decode(buf)}catch{}}  // 엑셀 한글 CSV(CP949)
+ return s.replace(/^﻿/,'');
+}
+function parseCSV(text){
+ const first=text.split(/\r?\n/,1)[0]||'';
+ const delim=first.includes('\t')?'\t':(first.split(';').length>first.split(',').length?';':',');
+ const rows=[];let row=[],f='',q=false,start=true;
+ for(let i=0;i<text.length;i++){const ch=text[i];
+  if(q){if(ch==='"'){if(text[i+1]==='"'){f+='"';i++}else q=false}else f+=ch;continue}
+  if(ch==='"'&&start){q=true;start=false;continue}
+  if(ch===delim){row.push(f);f='';start=true;continue}
+  if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(f);rows.push(row);row=[];f='';start=true;continue}
+  f+=ch;start=false;
+ }
+ if(f!==''||row.length){row.push(f);rows.push(row)}
+ return rows;
+}
+
+// ---------- 표 → 문제 ----------
+function rowsToQuestions(rows){
+ const norm=c=>String(c??'').replace(/\s/g,'');
+ const hi=rows.findIndex(r=>r&&r.some(c=>['질문','문제'].includes(norm(c))));
+ let map={stage:0,text:1,c:[2,3,4,5],ans:6,exp:7};
+ if(hi>=0){const h=rows[hi].map(norm);const f=pred=>h.findIndex(pred);
+  map={stage:f(c=>c==='장'||/^장\(/.test(c)||c==='단원'),text:f(c=>c==='질문'||c==='문제'),c:[1,2,3,4].map(k=>f(c=>c==='보기'+k||c==='선택지'+k)),ans:f(c=>c.startsWith('정답')),exp:f(c=>c.startsWith('해설'))}}
+ const ok=[],bad=[];let examples=0;
+ for(let i=(hi>=0?hi+1:0);i<rows.length;i++){
+  const r=rows[i]||[];const g=k=>k>=0?String(r[k]??'').trim():'';
+  const text=g(map.text),chs=map.c.map(g),ansRaw=g(map.ans),stRaw=g(map.stage),line=i+1;
+  if(!text&&!chs.some(Boolean)&&!ansRaw)continue;
+  if(/^\(예시\)/.test(text)){examples++;continue}
+  const fail=reason=>bad.push({line,reason,text});
+  const st=stRaw.replace(/\s|장/g,'');let stage;
+  if(!st||/^(전체|모든|모두|all|0)$/i.test(st))stage='all';else if(/^[1-5]$/.test(st))stage=+st-1;else{fail(`장 「${stRaw}」 → 1~5 또는 「전체」로 적어 주세요`);continue}
+  let choices=[];const idx=[];chs.forEach((c,k)=>{if(c){choices.push(c);idx.push(k)}});
+  const a=ansRaw.replace(/\s/g,'');let answer=-1;
+  const isO=/^(o|○|◯|맞아요|맞음|맞다|참|true)$/i.test(a),isX=/^(x|×|✕|아니에요|아님|틀리다|틀림|거짓|false)$/i.test(a);
+  if(!text){fail('질문이 비어 있어요');continue}
+  if(!choices.length&&(isO||isX)){choices=QOX.slice();answer=isO?0:1}
+  else if(/^[1-4]번?$/.test(a)){const k=+a[0]-1;answer=idx.indexOf(k);if(answer<0){fail(`정답 ${k+1}번 보기가 비어 있어요`);continue}}
+  else if(a){answer=choices.findIndex(c=>c===ansRaw.trim()||c.replace(/\s/g,'')===a);
+   if(answer<0&&(isO||isX)&&choices.length===2)answer=isO?0:1;
+   if(answer<0){fail(`정답 「${ansRaw}」에 맞는 보기가 없어요 (번호 1~4, 보기 글자 그대로, 또는 O/X)`);continue}}
+  if(choices.length<2){fail('보기를 2개 이상 적어 주세요 (O/X 문제는 보기를 비우고 정답에 O 또는 X)');continue}
+  if(answer<0){fail('정답을 적어 주세요 (보기 번호, 정답 글자, 또는 O/X)');continue}
+  const q=cleanQuestion({stage,text,choices,answer,explain:g(map.exp)});
+  if(!q){fail('형식을 확인해 주세요');continue}
+  q.line=line;q.cut=text.length>240||choices.some(c=>c.length>100)||g(map.exp).length>300;ok.push(q);
+ }
+ return {ok,bad,examples};
+}
+async function readQuestionFile(file){
+ if(file.size>3000000)throw new Error('파일이 너무 커요 (3MB 이하로 올려 주세요).');
+ const buf=new Uint8Array(await file.arrayBuffer());
+ const isZip=buf[0]===0x50&&buf[1]===0x4b;
+ if(!isZip&&/\.xls$/i.test(file.name))throw new Error('예전 엑셀 형식(.xls)은 읽을 수 없어요. 엑셀에서 「다른 이름으로 저장 › Excel 통합 문서(.xlsx)」로 저장해 올려 주세요.');
+ if(!isZip&&/\.(hwp|hwpx|docx?|pdf)$/i.test(file.name))throw new Error('엑셀(.xlsx)이나 CSV 파일만 올릴 수 있어요. 템플릿을 내려받아 작성해 주세요.');
+ return rowsToQuestions(isZip?await readXlsx(buf):parseCSV(decodeText(buf)));
+}
+
+// ---------- 내보내기 ----------
+function qCsvCell(v){v=String(v??'');return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function questionsToCSV(qs,withExamples){
+ const rows=[QHEAD];if(withExamples)rows.push(...QEXAMPLES);
+ for(const q of qs){const ox=q.choices.length===2&&q.choices[0]===QOX[0]&&q.choices[1]===QOX[1];
+  rows.push([q.stage==='all'?'전체':String(q.stage+1),q.text,...(ox?['','','','']:[0,1,2,3].map(k=>q.choices[k]||'')),ox?(q.answer===0?'O':'X'):String(q.answer+1),q.explain||''])}
+ return '﻿'+rows.map(r=>r.map(qCsvCell).join(',')).join('\r\n')+'\r\n';
+}
+function qDownload(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+</script>
 <script>// 교사용 기능: 진행 이동 · 연습(진행 불변) · 난이도/무적 · 문제 관리 · 학생용 링크/파일 · 학습 기록
 const CLASS_KEY=window.CLASS_STORE_KEY||'equality-rpg-class-v1',TEACH_KEY='equality-rpg-teacher-v1';
 const BASE_QS=stages.map((s,si)=>s.qs.map((q,qi)=>[q[0],q[1],q[2],q[3],`b${si}-${qi}`]));
@@ -2480,7 +2632,23 @@ async function applyClassFromHash(){
 }
 
 // ---------- 화면 ----------
-let TTAB=null,EDITING=null;
+let TTAB=null,EDITING=null,IMPORT=null;
+function renderImport(){
+ const box=$('#q-preview');if(!box||!IMPORT)return;const r=IMPORT;
+ const mode=(document.querySelector('input[name="q-imode"]:checked')||{}).value||'add';
+ const room=mode==='replace'?200:200-CLS.questions.length;const n=Math.min(r.ok.length,Math.max(0,room));
+ const rows=[...r.ok.map(q=>({line:q.line,ok:true,q})),...r.bad.map(b=>({line:b.line,ok:false,b}))].sort((a,b)=>a.line-b.line);
+ const shown=rows.slice(0,80);
+ box.innerHTML=`<div class="pv"><p><b>${escH(r.name)}</b> — 올릴 수 있는 문제 <b class="ok">${r.ok.length}개</b>${r.bad.length?` · 고칠 줄 <b class="ng">${r.bad.length}개</b>`:''}${r.examples?` · 예시 줄 ${r.examples}개는 건너뜀`:''}${r.ok.length>n?` · 최대 200개라 ${n}개만 들어가요`:''}</p>
+  ${rows.length?`<div class="pvwrap"><table class="ttable pvt"><colgroup><col class="c1"><col class="c2"><col><col class="c4"><col class="c5"></colgroup><tr class="h"><th>줄</th><th>장</th><th>질문</th><th>보기 · 정답</th><th>확인</th></tr>${shown.map(x=>x.ok?`<tr><td>${x.line}</td><td>${x.q.stage==='all'?'전체':x.q.stage+1}</td><td class="l">${escH(x.q.text)}</td><td class="l">${x.q.choices.map((c,i)=>i===x.q.answer?`<b>${escH(c)}</b>`:escH(c)).join(' / ')}</td><td class="ok">✔${x.q.cut?' <small>(길어서 잘림)</small>':''}</td></tr>`:`<tr class="bad"><td>${x.line}</td><td>—</td><td class="l">${escH(x.b.text||'')}</td><td class="l ng" colspan="2">✖ ${escH(x.b.reason)}</td></tr>`).join('')}</table></div>${rows.length>shown.length?`<p class="muted">… 외 ${rows.length-shown.length}줄</p>`:''}`:'<p class="muted">읽을 문제가 없어요. 템플릿의 「문제」 시트에 적었는지 확인해 주세요.</p>'}
+  <div class="trow"><button id="q-imp" class="primary" ${n?'':'disabled'}>${mode==='replace'?`선생님 문제를 이 ${n}개로 바꾸기`:`${n}개 추가하기`}</button><button id="q-impcancel">취소</button>${r.bad.length?'<span class="muted">✖ 줄은 파일에서 고친 뒤 다시 올리면 돼요.</span>':''}</div></div>`;
+ document.querySelectorAll('input[name="q-imode"]').forEach(x=>x.onchange=renderImport);
+ $('#q-impcancel').onclick=()=>{IMPORT=null;box.innerHTML=''};
+ $('#q-imp').onclick=()=>{const qs=r.ok.slice(0,n).map(({line,cut,...q})=>q);
+  if(mode==='replace'){if(CLS.questions.length&&!confirm(`지금 있는 선생님 문제 ${CLS.questions.length}개를 지우고 ${qs.length}개로 바꿀까요?`))return;CLS.questions=qs;PRIORITY=[]}
+  else CLS.questions.push(...qs);
+  saveClass();IMPORT=null;teacherPanel('quiz');msg('#q-msg',`파일에서 문제 ${qs.length}개를 ${mode==='replace'?'바꿔 넣었어요':'추가했어요'}! 지금부터 ${CLS.mode==='only'?'선생님 문제만':'기본 문제와 섞여서'} 출제돼요. 당장 내고 싶은 문제는 아래 목록에서 「바로 출제」를 누르세요.`)};
+}
 function openTeacher(){
  let ok=false;try{ok=sessionStorage.getItem('teach-ok')==='1'}catch{}
  if(ok){teacherPanel(TTAB||(TEACHER_EXT.length?TEACHER_EXT[0].key:'move'));return}
@@ -2513,15 +2681,21 @@ function teacherPanel(tab){
  if(tab==='quiz'){
   const e=EDITING&&CLS.questions.find(q=>q.id===EDITING);
   const v=e||{stage:S.stage,text:'',choices:['','','',''],answer:0,explain:''};
-  h+=`<h3>${e?'문제 고치기':'문제 추가'}</h3>
+  h+=`<h3>엑셀·CSV 템플릿으로 한꺼번에 올리기</h3>
+  <p class="muted">① 템플릿을 내려받아 ② 한 줄에 한 문제씩 적고 ③ 파일을 올리면, 미리보기로 확인한 뒤 추가돼요. 구글 시트는 같은 열 순서로 적어 .xlsx나 CSV로 내려받아 올리면 돼요.</p>
+  <div class="trow"><a class="btnlink" id="q-tplx" href="${QTEMPLATE_URL}" download="평등의나라_문제_템플릿.xlsx">엑셀 템플릿 내려받기 (.xlsx)</a><button id="q-tplc">CSV 템플릿 내려받기</button><button id="q-export" ${CLS.questions.length?'':'disabled'}>지금 선생님 문제 내보내기 (CSV)</button></div>
+  <div class="trow"><label class="filebtn upbtn">📂 파일 올리기 (.xlsx · .csv)<input type="file" id="q-file" accept=".xlsx,.csv,.txt,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"></label>
+   <label class="chk inl"><input type="radio" name="q-imode" value="add" checked> 지금 문제에 더하기</label><label class="chk inl"><input type="radio" name="q-imode" value="replace"> 선생님 문제를 모두 바꾸기</label></div>
+  <div id="q-preview"></div>
+  <h3>${e?'문제 고치기':'문제 하나씩 추가'}</h3>
   <div class="trow"><label>장 <select id="q-st">${stageOpts(v.stage,true)}</select></label><label class="chk"><input type="checkbox" id="q-pri" checked> 다음 필살기에서 바로 출제</label></div>
   <label class="blk">질문<textarea id="q-text" maxlength="240" rows="2" placeholder="예) 친구가 놀림을 당할 때 할 수 있는 행동은?">${escH(v.text)}</textarea></label>
   <div class="qch">${[0,1,2,3].map(i=>`<label><input type="radio" name="q-ans" value="${i}" ${v.answer===i?'checked':''} aria-label="정답 ${i+1}"><input id="q-c${i}" maxlength="100" placeholder="보기 ${i+1}${i>=2?' (비워도 돼요)':''}" value="${escH(v.choices[i]||'')}"></label>`).join('')}</div>
   <p class="muted">동그라미를 눌러 정답을 고르세요. <button id="q-ox" class="mini">O/X 문제로 채우기</button></p>
   <label class="blk">해설 (틀렸을 때 보여 줄 말)<textarea id="q-exp" maxlength="300" rows="2">${escH(v.explain)}</textarea></label>
   <div class="trow"><button id="q-add" class="primary">${e?'고친 내용 저장':'문제 추가'}</button>${e?'<button id="q-cancel">고치기 취소</button>':''}<span id="q-msg" class="tmsg"></span></div>
-  <h3>여러 문제 한꺼번에 붙여넣기</h3>
-  <p class="muted">한 줄에 한 문제 — <b>장 | 질문 | 보기1 / 보기2 / 보기3 | 정답 번호 | 해설</b> (장은 1~5 또는 「전체」, 해설은 생략 가능)</p>
+  <h3>직접 붙여넣기</h3>
+  <p class="muted">엑셀·구글 시트에서 템플릿 표의 줄을 <b>복사해 그대로 붙여 넣어도</b> 되고, 한 줄에 <b>장 | 질문 | 보기1 / 보기2 / 보기3 | 정답 번호 | 해설</b> 형식으로 적어도 돼요.</p>
   <textarea id="q-bulk" rows="3" placeholder="1 | 단톡방에서 친구를 놀리는 글을 보면? | 같이 웃는다 / 멈추자고 말한다 / 다른 방에 퍼뜨린다 | 2 | 차별적인 말에는 동조하지 않아요."></textarea>
   <div class="trow"><button id="q-bulkadd">한꺼번에 추가</button><span id="q-bmsg" class="tmsg"></span></div>
   <h3>출제 방식</h3>
@@ -2571,6 +2745,7 @@ function readForm(){
  return {id:EDITING||newId(),stage:st==='all'?'all':+st,text:$('#q-text').value,choices:kept,answer:ans,explain:$('#q-exp').value};
 }
 function parseBulk(text){
+ if(text.includes('\t')){const r=rowsToQuestions(parseCSV(text));return {ok:r.ok.map(({line,cut,...q})=>q),bad:r.bad.map(b=>b.line)}}
  const ok=[],bad=[];
  text.split(/\r?\n/).forEach((line,n)=>{if(!line.trim())return;
   const p=line.split('|').map(s=>s.trim());
@@ -2593,6 +2768,11 @@ function bindTeacher(tab){
   on('#t-coin',()=>{S.coins+=500;save();hud();log('[교사] 냥 +500','gold');teacherPanel('move')});
  }
  if(tab==='quiz'){
+  const tplx=$('#q-tplx');if(tplx)tplx.onclick=e=>{e.preventDefault();fetch(QTEMPLATE_URL).then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()}).then(b=>qDownload('평등의나라_문제_템플릿.xlsx',b)).catch(()=>{const a=document.createElement('a');a.href=QTEMPLATE_URL;a.download='question-template.xlsx';document.body.appendChild(a);a.click();a.remove()})};
+  on('#q-tplc',()=>qDownload('평등의나라_문제_템플릿.csv',new Blob([questionsToCSV([],true)],{type:'text/csv;charset=utf-8'})));
+  on('#q-export',()=>qDownload('평등의나라_선생님문제.csv',new Blob([questionsToCSV(CLS.questions,false)],{type:'text/csv;charset=utf-8'})));
+  $('#q-file').onchange=async ev=>{const f=ev.target.files[0];ev.target.value='';if(!f)return;const box=$('#q-preview');box.innerHTML='<p class="muted">읽는 중…</p>';
+   try{const r=await readQuestionFile(f);IMPORT={name:f.name,...r};renderImport()}catch(err){IMPORT=null;box.innerHTML=`<p class="tmsg ng">${escH(err.message||'파일을 읽지 못했어요.')}</p>`}};
   on('#q-ox',()=>{$('#q-c0').value='O · 맞아요';$('#q-c1').value='X · 아니에요';$('#q-c2').value='';$('#q-c3').value=''});
   on('#q-add',()=>{const raw=readForm();const q=cleanQuestion(raw);
    if(!q){msg('#q-msg',!raw.text.trim()?'질문을 입력해 주세요.':raw.choices.length<2?'보기를 2개 이상 입력해 주세요.':'정답으로 고른 보기가 비어 있어요.',false);return}
