@@ -8,14 +8,24 @@ const SIDE2=SIDE.slice(0,14).concat(['.....opppo......','....offfo.......']);
 const GOBLIN=['....h......h....','....hh....hh....','...gggggggggg...','..gggggggggggg..','..ggwg.gg.wggg..','..ggkk.gg.kkgg..','...gggggggggg...','....gwwwwwwg....','....gggggggg....','..ggggbbbbgggg..','..gg.gbbbbg.gg..','.....bbbbbb.....','.....bbbbbb.....','.....gg..gg.....','....kkk..kkk....'];
 const FOX=['...rr......rr...','...rwr....rwr...','...rrrrrrrrrr...','....rrrrrrrr....','...rrkrrrrkrr...','....rwwkkwwr....','.....wwwwww.....','......rrrr...rr.','.....rrrrrr..rr.','....rrwwwwrrrr..','....rrwwwwrrrr..','.....rrrrrrww...','.....rr..rr.....','....kkk..kkk....'];
 const BOSS=['...h........h...','...hh..hh..hh...','....hhhhhhhh....','...rrrrrrrrrr...','..rrkrrrrrrkrr..','..rrwwrrrrwwrr..','...rrrrkkrrrr...','....rwwwwwwr....','.....rrrrrr.....','...aaaaggaaaa...','..aaaaaggaaaaa..','..rr.aaagaa.rr..','..rr.aaaaaa.rr..','.....aaaaaa.....','.....aaggaa.....','.....aa..aa.....','....kkk..kkk....'];
+const WISP=['.......hh.......','......hrrh......','.....hrrrrh.....','....hrrwwrrh....','...hrrwwwwrrh...','..hrrwwwwwwrrh..','..hrwwkwwkwwrh..','..hrwwkwwkwwrh..','..hrwwwwwwwwrh..','..hrrwwmmwwrrh..','...hrrwwwwrrh...','....hrrrrrrh....','.....hhhhhh.....','...h..h..h..h...'];
+const GOLEM=['....aaaaaaaa....','..aaaaaaaaaaaa..','.aaggaaaaaaggaa.','.aaaaaaaaaaaaaa.','.aakkaaaaaakkaa.','.aawkaaaaaawkaa.','.aaaaaaaaaaaaaa.','.aaaarrrrrraaaa.','..aaaaaaaaaaaa..','aaaaaaaaaaaaaaaa','aagaaaaaaaaaagaa','aaaaaaaaaaaaaaaa','.aaaaaaaaaaaaaa.','..aaaa....aaaa..','..kkkk....kkkk..'];
+const CAT=['...oo......oo...','...oyo....oyo...','...oyyooooyyo...','..oyyyyyyyyyyo..','..oyyeyyyyeyyo..','..oyyeyyyyeyyo..','..oyyyymmyyyyo..','...oyyyyyyyyo...','....oooooooo....','...occcwwccco...','..occcwwwwccco..','..yccccccccccy..','...occcccccco...','...oyyo..oyyo...','...oooo..oooo...'];
 const base={o:'#2a1a12',s:'#f7c9a0',e:'#1a1a1a',m:'#f39a8a'};
 const PAL={
  baram:{...base,h:'#2b2b3a',b:'#2f6fd8',c:'#3a7bd5',w:'#f4f1e6',p:'#6b4a2b',f:'#3a2a1a'},
  bomi:{...base,h:'#8a4421',b:'#e8473b',c:'#3fae6a',w:'#ffe08a',p:'#2f4f8f',f:'#5a2a1a'},
  gomdol:{...base,s:'#e8b48a',h:'#5a3a22',b:'#ff8fc0',c:'#b8483e',w:'#ff9fcf',p:'#4a3a2a',f:'#2a1a0a'},
  master:{...base,h:'#f0f0f0',b:'#7a4fb0',c:'#7a4fb0',w:'#ffd75e',p:'#5a3a8a',f:'#3a2a1a'},
- villager:{...base,h:'#3a2a1a',b:'#e0a030',c:'#d88a3a',w:'#fff',p:'#6a4a2a',f:'#3a2a1a'}
+ villager:{...base,h:'#3a2a1a',b:'#e0a030',c:'#d88a3a',w:'#fff',p:'#6a4a2a',f:'#3a2a1a'},
+ villager2:{...base,h:'#6a3a1a',b:'#3aa0d8',c:'#e86a8a',w:'#fff',p:'#3a4a6a',f:'#3a2a1a'},
+ friend0:{...base,s:'#fff0f0',h:'#ffffff',b:'#ff8ab0',c:'#ff8ab0',w:'#fff',p:'#e85a8a',f:'#c84a6a'},
+ friend1:{...base,s:'#d8c8b8',h:'#5a5a6a',b:'#2a2a3a',c:'#f0f0f0',w:'#e86a3a',p:'#4a4a5a',f:'#2a2a2a'},
+ friend2:{...base,s:'#f0c890',h:'#a85a2a',b:'#ffd75e',c:'#3aa05a',w:'#fff',p:'#7a4a2a',f:'#4a2a1a'},
+ cat:{o:'#2a1a12',y:'#f0a040',e:'#1a1a1a',m:'#ff8a9a',c:'#7a3ab0',w:'#ffd75e'}
 };
+const WISP_PAL=[['#c8501a','#ff8a3a','#ffe0a0'],['#2a6ac8','#5ab0ff','#d0f0ff'],['#c83a8a','#ff6ab0','#ffe0f0'],['#5a4a8a','#9a8ac8','#e0d8ff'],['#8a1a1a','#e84a3a','#ffc0a0']];
+const GOLEM_PAL=[['#8a9a7a','#5a8a3a'],['#6a7a6a','#3a6a3a'],['#c8a8b8','#7aa04a'],['#7a7a8a','#5a6a5a'],['#6a5a5a','#8a3a3a']];
 const ENEMY_PAL=[
  {g:'#4cc46a',h:'#f4e6b0',w:'#ffffff',k:'#1a1a1a',b:'#8a5a2a',r:'#ff7a3a',a:'#8a3ab0'},
  {g:'#5a9ad8',h:'#ffd75e',w:'#ffffff',k:'#1a1a1a',b:'#3a3a6a',r:'#c06a2a',a:'#2a5a8a'},
@@ -57,7 +67,12 @@ function get(key,pose,frame=0,stage=0){
  if(key==='goblin'||key==='fox'||key==='boss'){
   const rows=key==='goblin'?GOBLIN:key==='fox'?FOX:BOSS;
   img=render(rows,{o:'#1a0f0a',...ENEMY_PAL[stage%5]},key);
- } else {
+ } else if(key==='wisp'){const p=WISP_PAL[stage%5];img=render(WISP,{o:'#1a0a1a',h:p[0],r:p[1],w:p[2],k:'#1a0a1a',m:'#ff4a6a'},key)}
+ else if(key==='golem'){const p=GOLEM_PAL[stage%5];img=render(GOLEM,{o:'#1a1410',a:p[0],g:p[1],k:'#1a1a1a',w:'#ffffff',r:'#3a2a2a'},key)}
+ else if(key==='guard'){img=render(GOBLIN,{o:'#0a0a14',g:'#5a6a8a',h:'#c8c8d8',w:'#ffe06a',k:'#1a1a1a',b:'#2a2a4a'},key)}
+ else if(key==='shadow'){img=render(BOSS,{o:'#05030a',h:'#8a7ab0',r:'#3a2a5a',k:'#ff4a6a',w:'#c8b8ff',a:'#241a3a',g:'#5a4a8a'},key)}
+ else if(key==='cat'){img=render(CAT,PAL.cat,key)}
+ else {
   const rows=pose==='back'?BACK:pose==='side'?(frame?SIDE2:SIDE):(frame?FRONT2:FRONT);
   img=render(rows,PAL[key]||PAL.villager,key);
  }
@@ -80,8 +95,7 @@ function face(cv,key){ // 초상화 (머리 부분 확대)
  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,cv.width,cv.height);
  g.fillStyle=key==='sys'?'#1a2a6a':'#0d1442';g.fillRect(0,0,cv.width,cv.height);
  if(key==='sys'){g.fillStyle='#ffd75e';g.font='24px NeoDunggeunmo';g.textAlign='center';g.fillText('!',cv.width/2,cv.height/2+8);return}
- const isE=key==='goblin'||key==='fox'||key==='boss';
- const img=get(key,isE?'front':'front',0,face.stage||0);
+ const img=get(key,'front',0,face.stage||0);
  const s=cv.width/12;
  g.drawImage(img,0,0,18,12,-3*s,-0.5*s+2,18*s,12*s);
 }

@@ -42,6 +42,9 @@
       </div>
     </div>
 
+    <!-- 상점·가방 패널 -->
+    <div class="menuui" id="menuui" hidden><div class="mpanel win" id="mpanel"></div></div>
+
     <!-- 외줄 수련 패널 -->
     <div class="trialui" id="trialui" hidden><div class="tpanel win" id="tpanel"></div></div>
 
@@ -52,7 +55,7 @@
         <h1>평등의 나라</h1>
         <h2>취풍 무협전</h2>
         <canvas id="titleart" width="160" height="40"></canvas>
-        <p>편견의 요괴들이 다섯 고을을 뒤덮었다!<br>낮잠 좋아하는 수련생 바람과 엉뚱한 동료들이<br><b>정답을 외치면 터지는 필살기</b>로 세상을 구한다…?</p>
+        <p>편견의 요괴들이 다섯 고을을 뒤덮었다!<br>편지 줍기, 어둠의 미로, 바위 퍼즐, 몰래 잠입, 그림자 장수까지…<br><b>정답을 외치면 터지는 필살기</b>와 무기·도구로 세상을 구하라!</p>
         <button id="play">원정 시작</button>
         <small>방향키 / WASD 이동 · Space·Enter 대화/결정 · 숫자키로 정답 선택<br>마우스·터치로 바닥을 누르면 그곳으로 걸어갑니다.</small>
       </div>
@@ -66,6 +69,7 @@
       <div class="hotkeys">
         <button id="act"><kbd>SPACE</kbd> 대화·조사</button>
         <button id="potion"><kbd>1</kbd> 회복약</button>
+        <button id="bag"><kbd>I</kbd> 가방</button>
         <button id="journal"><kbd>J</kbd> 수련 수첩</button>
       </div>
       <div class="log" id="log" role="log" aria-live="polite"></div>
@@ -87,9 +91,11 @@
 
 <script src="js/questions.js"></script>
 <script src="js/data.js"></script>
+<script src="js/maps.js"></script>
 <script src="js/sprites.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/trial.js"></script>
+<script src="js/battle.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

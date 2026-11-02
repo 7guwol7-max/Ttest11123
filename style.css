@@ -19,7 +19,7 @@ nav button:hover,.hotkeys button:hover,dialog button:hover{filter:brightness(1.2
 #game{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;outline:none}
 .win{background:linear-gradient(180deg,var(--win1),var(--win2));border:3px solid var(--winb);border-radius:6px;box-shadow:0 0 0 2px #0b0f30,inset 0 0 0 1px #6a7ad8,3px 4px 0 #0008;color:#fff}
 .zone{position:absolute;top:1.5cqw;left:50%;transform:translateX(-50%);padding:.5cqw 2cqw;font-size:clamp(11px,2.2cqw,20px);pointer-events:none;transition:opacity .6s}
-.quest{position:absolute;top:1.2cqw;left:50%;transform:translateX(-50%);max-width:62cqw;padding:.7cqw 1.6cqw;font-size:clamp(10px,1.6cqw,15px);line-height:1.45;pointer-events:none;text-align:center;opacity:.93;white-space:nowrap}
+.quest{position:absolute;top:1.2cqw;left:50%;transform:translateX(-50%);max-width:72cqw;width:max-content;padding:.7cqw 1.6cqw;font-size:clamp(10px,1.6cqw,15px);line-height:1.45;pointer-events:none;text-align:center;opacity:.93}
 .quest span{color:#c9cdf0}
 .quest br{display:none}
 .quest span::before{content:' · '}
@@ -60,6 +60,23 @@ nav button:hover,.hotkeys button:hover,dialog button:hover{filter:brightness(1.2
 .pm .bar i{position:absolute;inset:0;background:linear-gradient(90deg,#3fd06a,#a8f07a);transform-origin:left}
 .pm.low .bar i{background:linear-gradient(90deg,#e24a3b,#ff9a6b)}
 .pm span{font-size:.85em;color:var(--muted)}
+/* 전투 목록·기력 */
+.clist{display:flex;flex-direction:column}
+.clist .choice{margin:.2em 0}
+.choice small{color:#c9cdf0;font-size:.8em;margin-left:.3em}
+.choice.hintbtn{border-color:#c8b8ff;color:#e0d8ff}
+.pm.act b{color:#7be3ff}
+.ki{display:grid;grid-template-columns:auto 1fr auto;gap:.5em;align-items:center;margin-top:.3em;font-size:.9em;color:#c8b8ff}
+.ki .bar{height:.55em;background:#000;border:1px solid #8890c8;position:relative}
+.ki .bar i{position:absolute;inset:0;background:linear-gradient(90deg,#7a5aff,#c8b8ff);transform-origin:left}
+/* 상점·가방 패널 */
+.menuui{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#0007;z-index:4}
+.mpanel{width:min(80cqw,620px);max-height:92%;overflow:auto;padding:1.8cqw 2.4cqw;font-size:clamp(11px,1.85cqw,17px);line-height:1.55}
+.mpanel h3{margin:0 0 .3em;color:var(--gold);font-weight:normal;font-size:1.2em}
+.mpanel p{margin:.35em 0}
+.mpanel b{color:var(--gold);font-weight:normal}
+.mbtns{display:flex;flex-direction:column}
+.mbtns .choice{margin:.18em 0}
 /* 외줄 수련 패널 */
 .trialui{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#0007;z-index:4}
 .tpanel{width:min(76cqw,600px);padding:2cqw 2.6cqw;font-size:clamp(11px,1.95cqw,18px);line-height:1.6}
@@ -131,4 +148,10 @@ textarea{width:100%;min-height:80px;font:inherit;background:#0c1550;color:#fff;b
   .card canvas{width:32px;height:32px}
   .bparty{width:36cqw}
   .quest{white-space:normal}
+  .bcmd{min-height:0;padding:1cqw 1.4cqw;font-size:clamp(10px,2.6cqw,15px)}
+  .bcmd .q{margin:0 0 .3em;line-height:1.35}
+  .cmds{grid-template-columns:1fr 1fr 1fr;gap:.15em .4em}
+  .choice{padding:.25em .45em;margin:.2em 0}
+  .bmsg{font-size:clamp(10px,2.6cqw,15px);padding:.6cqw 1.4cqw}
+  .bparty{font-size:clamp(9px,2.3cqw,13px)}
 }
