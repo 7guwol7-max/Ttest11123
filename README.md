@@ -1,11 +1,28 @@
-<div align="center">
+# 평등의 나라 · 취풍 무협전
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+양성평등 학습지(존중 · 보호 · 자유 · 용기 · 연대)를 바탕으로 만든 **코믹 무협 도트 RPG**입니다.
+기존 「평등의 나라 · 바람길 원정」을 이어받아, 고전 동양풍 JRPG처럼 **사이드뷰 턴제 전투 · 초상화 대화창 · 동료 합류 · 칩튠 음악**으로 다시 만들었습니다.
 
-  <h1>Built with AI Studio</h2>
+## 실행
+- 온라인: Vercel 배포 주소에서 바로 플레이
+- 오프라인: `평등의나라_취풍무협전.html` 파일 하나를 Chrome/Edge로 열기 (폰트·코드 모두 내장)
+- 소스: `index.html` + `style.css` + `js/` + `assets/` (정적 파일, 빌드 불필요)
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## 조작
+- 이동: 방향키 / WASD, 또는 바닥을 클릭·터치
+- 대화·조사: Space / Enter
+- 전투: ↑↓←→ 선택, Space/Enter 결정, 숫자키 1~3 바로 선택
+- 1 회복약 · J 수련 수첩 · M 소리 켜기/끄기
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## 진행
+NPC와 대화 → 떠돌이 요괴 2마리 → 강 건너 남쪽 비석 → 보스 → 북동쪽 성문 (5개 장)
+- 전투에서 「필살기」를 고르면 문제가 나오고, 정답이면 동료의 필살기로 100 피해
+- 떠돌이 요괴는 1번, 보스는 3번 정답으로 처치 / 오답이면 반격(-20)과 해설
+- 2장에서 궁수 **보미**, 3장에서 분홍 권법가 **곰돌**이 동료로 합류
+- 마지막 성문을 지나면 엔딩 · 실천 약속 · 원정 기록 내려받기
 
-</div>
+## 출처·저작권
+- 문항: 첨부 양성평등교육 학습지(학생용 문제, 교사용 정답·해설) 기반
+- 그래픽·음악: 코드로 직접 그린 도트와 자체 작곡 칩튠 (특정 상용 게임의 리소스 미사용)
+- 폰트: Neo둥근모 (SIL Open Font License 1.1, `assets/OFL-neodgm.txt`)
+- 단일 파일 다시 만들기: `python3 build.py`

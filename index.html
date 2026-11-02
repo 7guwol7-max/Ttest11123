@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>평등의 나라 · 취풍 무협전</title>
+<meta name="description" content="양성평등 학습지를 바탕으로 만든 코믹 무협 도트 RPG. 정답을 외쳐 필살기를 터뜨려 편견의 요괴를 물리치세요.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="client">
+  <header>
+    <div class="title">평등의 나라 <span>취풍 무협전</span></div>
+    <nav>
+      <button id="help">도움말</button>
+      <button id="video">학습 영상</button>
+      <button id="sound">소리 ON</button>
+      <button id="reset">새 게임</button>
+    </nav>
+  </header>
+
+  <section class="screen" id="screen">
+    <canvas id="game" width="480" height="320" tabindex="0" aria-label="게임 화면. 방향키 또는 WASD 이동, Space 대화 및 결정"></canvas>
+
+    <div class="chapter" id="chapter" hidden><small id="chapNo"></small><b id="chapName"></b><span id="chapDesc"></span></div>
+    <div class="quest win" id="questbox"><b id="qtitle">임무</b><div id="quest"></div></div>
+    <div class="zone" id="zone" hidden></div>
+
+    <!-- 대화창 -->
+    <div class="dialog win" id="dialog" hidden>
+      <canvas id="face" width="40" height="40"></canvas>
+      <div class="dtext"><b id="dname"></b><p id="dline"></p></div>
+      <span class="next">▼</span>
+    </div>
+
+    <!-- 전투 UI -->
+    <div class="battle" id="battleui" hidden>
+      <div class="bmsg win" id="bmsg"></div>
+      <div class="bbottom">
+        <div class="bcmd win" id="bcmd"></div>
+        <div class="bparty win" id="bparty"></div>
+      </div>
+    </div>
+
+    <!-- 타이틀 -->
+    <div id="splash">
+      <div class="splashinner">
+        <span class="kicker">코믹 무협 도트 RPG · 양성평등 학습 모험</span>
+        <h1>평등의 나라</h1>
+        <h2>취풍 무협전</h2>
+        <canvas id="titleart" width="160" height="40"></canvas>
+        <p>편견의 요괴들이 다섯 고을을 뒤덮었다!<br>낮잠 좋아하는 수련생 바람과 엉뚱한 동료들이<br><b>정답을 외치면 터지는 필살기</b>로 세상을 구한다…?</p>
+        <button id="play">원정 시작</button>
+        <small>방향키 / WASD 이동 · Space·Enter 대화/결정 · 숫자키로 정답 선택<br>마우스·터치로 바닥을 누르면 그곳으로 걸어갑니다.</small>
+      </div>
+    </div>
+  </section>
+
+  <section class="console">
+    <div class="party" id="party"></div>
+    <div class="side">
+      <p id="inventory"></p>
+      <div class="hotkeys">
+        <button id="act"><kbd>SPACE</kbd> 대화·조사</button>
+        <button id="potion"><kbd>1</kbd> 회복약</button>
+        <button id="journal"><kbd>J</kbd> 수련 수첩</button>
+      </div>
+      <div class="log" id="log" role="log" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <div class="touch" id="touch">
+    <div class="dpad">
+      <button data-move="0,-1" aria-label="위">▲</button>
+      <div><button data-move="-1,0" aria-label="왼쪽">◀</button><button data-move="0,1" aria-label="아래">▼</button><button data-move="1,0" aria-label="오른쪽">▶</button></div>
+    </div>
+    <button class="abtn" id="abtn">A<br><small>결정</small></button>
+  </div>
+
+  <footer>코믹 무협 도트 RPG · 첨부 학습지 기반 · 그래픽·음악 자체 제작 <span id="savestatus">자동 저장</span></footer>
+</main>
+
+<dialog id="modal"><button id="close" aria-label="닫기">×</button><div id="body"></div></dialog>
+
+<script src="js/questions.js"></script>
+<script src="js/data.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
