@@ -20,7 +20,7 @@ const AIR=0.62,PY=232,PX=240;
 let TR=null;
 const pick=a=>a[(Math.random()*a.length)|0];
 const rnd=(a,b)=>a+Math.random()*(b-a);
-function trialAssist(){const f=S.trialFails||0;return {drift:Math.max(.45,1-.18*f),speed:Math.max(.78,1-.06*f),hearts:3+Math.min(2,f)}}
+function trialAssist(){const f=S.trialFails||0,dm=teacherTrialMul();return {drift:Math.max(.4,(1-.18*f)*dm.drift),speed:Math.max(.75,(1-.06*f)*dm.speed),hearts:3+Math.min(2,f)+dm.hearts}}
 function buildCourse(st,as){
  const L=TRIAL.len[st],ev=[],spd=TRIAL.speed[st]*as.speed;
  const maxGap=Math.min(30+st*4,spd*AIR*.6);
@@ -51,9 +51,9 @@ function initTrial(){
  t.c=buildCourse(st,as);t.gusts=t.c.ev.filter(e=>e.type==='gust');t.zones=t.c.ev.filter(e=>['slip','reverse','bounce','narrow'].includes(e.type));t.chase=TRIAL.chaser[st]*as.speed;t.chD=-240;t.bt=0;t.bs=1;
  return t;
 }
-function startTrial(){
+function startTrial(practice){
  if(mode!=='field'||trans||B||TR)return;
- TR=initTrial();mode='trial';keys={};path=[];
+ TR=initTrial();TR.practice=!!practice;mode='trial';keys={};path=[];
  Music.sfx('encounter');
  trans={t0:performance.now(),dur:600,kind:'swirl',mid:()=>{if(!TR)return;TR.shown=true;$('#questbox').hidden=true;Music.play('trial');trialIntroPanel()}};
 }
@@ -154,12 +154,12 @@ function trialUpdate(dt){
  if(P.d>=T.c.L){T.phase='clear';T.panelAt=T.time+1.1;trialClear()}
 }
 function fall(reason,word){
- const T=TR,P=T.P;P.falling=.9;P.fallDir=Math.sign(P.lean)||1;T.hearts--;T.lost++;Music.sfx('splash');shake=6;
+ const T=TR,P=T.P;P.falling=.9;P.fallDir=Math.sign(P.lean)||1;if(!teacherGod())T.hearts--;T.lost++;Music.sfx('splash');shake=6;
  trialMsg(reason==='balance'?'균형을 잃었다!':reason==='gap'?'끊어진 곳에 빠졌다!':reason==='crow'?`「${word}」 까마귀에 채였다! (↓ 웅크리기)`:reason==='rock'?'낙석에 맞았다! (그림자를 보면 속도 조절)':reason==='chaser'?'먹구름에 붙잡혔다! (멈추지 마!)':`「${word}」에 부딪혔다!`,'#ff6b5b');
 }
 function afterFall(){
  const T=TR,P=T.P;
- if(T.hearts<=0){T.phase='fail';T.panelAt=T.time+.4;S.trialFails=(S.trialFails||0)+1;save();Music.sfx('wrong');return}
+ if(T.hearts<=0){T.phase='fail';T.panelAt=T.time+.4;if(!T.practice)S.trialFails=(S.trialFails||0)+1;save();Music.sfx('wrong');return}
  P.d=Math.max(0,P.d-50);
  for(let k=0;k<3;k++)for(const e of T.c.ev)if(e.type==='gap'&&P.d>e.d-24&&P.d<e.d+e.len+4)P.d=Math.max(0,e.d-30);
  for(const e of T.c.ev){if(e.type==='roller'&&!e.gone&&e.d>P.d-20&&e.d<P.d+170)e.d=P.d+300;if((e.type==='crow'||e.type==='rock')&&!e.done&&e.d>P.d-20&&e.d<P.d+120){e.x=null;e.trig=null;e.hit=false}}
@@ -169,6 +169,7 @@ function afterFall(){
 }
 function trialClear(){
  const T=TR,perfect=T.lost===0,xp=100+T.orbs*10,before=level();
+ if(T.practice){T.reward={xp:0,perfect,up:false};Music.play('victory',null);trialMsg('연습 완주!','#ffd75e');return}
  S.trial=true;S.xp+=xp;if(perfect)S.items.potion++;
  S.trialRec=Array.isArray(S.trialRec)?S.trialRec:[];
  S.trialRec[T.stage]={orbs:T.orbs,lost:T.lost,tries:(S.trialFails||0)+1};
@@ -177,14 +178,14 @@ function trialClear(){
 }
 function clearPanel(){
  const T=TR,r=T.reward;
- trialPanel(`<h3>수련 성공! · ${TRIAL.names[T.stage]}</h3><p>결계가 완전히 풀렸다. 이제 보스에게 도전할 수 있다!</p>
+ trialPanel(`<h3>${T.practice?'연습 완주':'수련 성공!'} · ${TRIAL.names[T.stage]}</h3><p>${T.practice?'교사용 연습이라 진행 상황은 바뀌지 않아요.':'결계가 완전히 풀렸다. 이제 보스에게 도전할 수 있다!'}</p>
   <p>모은 구슬 ${T.orbs}개 · 경험치 +${r.xp}${r.perfect?' · <b>한 번도 안 떨어짐! 회복약 +1</b>':` · 떨어진 횟수 ${T.lost}`}${r.up?` · 레벨 업! Lv.${level()}`:''}</p>
-  ${T.got.length?`<p class="keys">모은 말: ${T.got.join(' · ')}</p>`:''}`,[['보스에게 가자!',()=>exitTrial(true)]]);
+  ${T.got.length?`<p class="keys">모은 말: ${T.got.join(' · ')}</p>`:''}`,[[T.practice?'연습 끝내기':'보스에게 가자!',()=>exitTrial(!T.practice)]]);
 }
 function failPanel(){
  const f=S.trialFails||0;
  const btns=[['다시 도전',()=>retryTrial()],['잠시 쉬기 (필드로)',()=>exitTrial(false)]];
- if(f>=2)btns.push(['도사님 도움으로 통과하기',()=>{S.trial=true;S.trialRec=Array.isArray(S.trialRec)?S.trialRec:[];S.trialRec[TR.stage]={orbs:0,lost:TR.lost,tries:f,helped:true};S.trialFails=0;save();exitTrial(true)}]);
+ if(f>=2&&!TR.practice)btns.push(['도사님 도움으로 통과하기',()=>{S.trial=true;S.trialRec=Array.isArray(S.trialRec)?S.trialRec:[];S.trialRec[TR.stage]={orbs:0,lost:TR.lost,tries:f,helped:true};S.trialFails=0;save();exitTrial(true)}]);
  trialPanel(`<h3>수련 실패…</h3><p>${pick(['괜찮아, 넘어져도 다시 일어나면 돼!','허허, 균형은 연습할수록 좋아지는 법이지!','혼자 힘들면 도움을 청해도 된단다.'])}</p><p class="muted">다시 도전할수록 바람이 약해지고 목숨이 늘어납니다.${f>=2?' 너무 어렵다면 도사님의 도움을 받아 통과할 수도 있어요.':''}</p>`,btns);
 }
 function retryTrial(){TR=initTrial();TR.shown=true;TR.phase='count';TR.count=2.5;keys={};Music.play('trial')}

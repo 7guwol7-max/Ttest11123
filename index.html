@@ -16,6 +16,7 @@
       <button id="video">학습 영상</button>
       <button id="sound">소리 ON</button>
       <button id="reset">새 게임</button>
+      <button id="teacher" class="tbtn">교사용</button>
     </nav>
   </header>
 
@@ -56,6 +57,7 @@
         <h2>취풍 무협전</h2>
         <canvas id="titleart" width="160" height="40"></canvas>
         <p>편견의 요괴들이 다섯 고을을 뒤덮었다!<br>편지 줍기, 어둠의 미로, 바위 퍼즐, 몰래 잠입, 그림자 장수까지…<br><b>정답을 외치면 터지는 필살기</b>와 무기·도구로 세상을 구하라!</p>
+        <p class="classnote" id="classnote" hidden></p>
         <button id="play">원정 시작</button>
         <small>방향키 / WASD 이동 · Space·Enter 대화/결정 · 숫자키로 정답 선택<br>마우스·터치로 바닥을 누르면 그곳으로 걸어갑니다.</small>
       </div>
@@ -84,7 +86,7 @@
     <button class="abtn" id="abtn">A<br><small>결정</small></button>
   </div>
 
-  <footer>코믹 무협 도트 RPG · 첨부 학습지 기반 · 그래픽·음악 자체 제작 <span id="savestatus">자동 저장</span></footer>
+  <footer>코믹 무협 도트 RPG · 첨부 학습지 기반 · 그래픽·음악 자체 제작 <span><span id="teachbadge" hidden></span> <span id="savestatus">자동 저장</span></span></footer>
 </main>
 
 <dialog id="modal"><button id="close" aria-label="닫기">×</button><div id="body"></div></dialog>
@@ -97,5 +99,6 @@
 <script src="js/trial.js"></script>
 <script src="js/battle.js"></script>
 <script src="js/game.js"></script>
+<script src="js/teacher.js"></script>
 </body>
 </html>

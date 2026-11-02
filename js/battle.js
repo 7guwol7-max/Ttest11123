@@ -15,14 +15,16 @@ const ESTAT={
 const QORDER={};
 function shuffleArr(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]]}return a}
 function nextQuestion(p){
- const list=p==='all'?stages.flatMap((s,si)=>s.qs.map((q,qi)=>[si,qi])):stages[p].qs.map((q,qi)=>[p,qi]);
- const key=String(p);if(!QORDER[key]||QORDER[key].length!==list.length)QORDER[key]=shuffleArr(list.map((_,i)=>i));
+ // 교사가 막 추가한 문제는 다음 필살기에서 먼저 출제
+ const pri=takePriority(p);if(pri)return pri;
+ const list=questionPool(p);
+ const key=String(p)+'|'+poolVersion();if(!QORDER[key]||QORDER[key].length!==list.length)QORDER[key]=shuffleArr(list.map((_,i)=>i));
  const idx=p==='all'?5:p;if(!Array.isArray(S.qptr))S.qptr=[0,0,0,0,0,0];
  const ptr=S.qptr[idx]|0;S.qptr[idx]=ptr+1;
- const [si,qi]=list[QORDER[key][ptr%list.length]];return stages[si].qs[qi];
+ return list[QORDER[key][ptr%list.length]];
 }
 function makeEnemy(type,st,extra={}){
- const s=ESTAT[type];const mult=extra.mult||1;const hp=Math.round(s.hp[st]*mult);
+ const s=ESTAT[type];const mult=(extra.mult||1)*teacherHpMul();const hp=Math.round(s.hp[st]*mult);
  return {type,st,name:extra.name||ENEMY_NAMES[st][type]||type,hp,max:hp,atk:Math.round(s.atk[st]*(extra.atkMult||1)),
   shield:type==='boss'?3:type==='shadow'?2:0,shieldMax:type==='boss'?3:type==='shadow'?2:0,stun:0,charge:false,turn:0,usedShell:false,usedSimon:0,stole:[],
   flash:0,shake:0,alpha:1,dead:false,slot:0,isBoss:type==='boss'||type==='shadow',quizPool:extra.quizPool??st,sprite:type==='shadow'?'shadow':type,spriteStage:st,xp:s.xp,coin:s.coin};
@@ -67,6 +69,7 @@ function endBattle(result){
   B=null;mode=dialog?'dialog':'field';cooldown=performance.now()+2000;
   if(result==='lose'){const s=startOf(S.stage);pl.x=s[0];pl.y=s[1];pl.dir='down';loadStage()}
   else if(result==='win'){refreshEnts()}
+  else if(result==='practice'){}
   else if(ent&&(ent.kind==='mob')){ent.x=ent.hx;ent.y=ent.hy;ent.fx=ent.x;ent.fy=ent.y;ent.t=1}
   else if(ent&&ent.kind==='guard'){/* 도망치면 감시꾼은 제자리에서 다시 순찰 */}
   Music.play('field');save();hud();cv.focus();
@@ -215,7 +218,7 @@ async function doQuiz(a,e){
   break;
  }
  if(ans===q[2]){
-  S.right++;gainKi(30);
+  S.right++;gainKi(30);recordAnswer(q,true);
   const finale=e.isBoss&&e.shield===1&&aliveP().length>1;
   const who=finale?aliveP():[a];
   const name=finale?`${stages[b.st].power} 합격기 · 다 함께!`:MEMBERS[a].move.replace('{p}',stages[Math.min(b.st,4)].power);
@@ -227,7 +230,7 @@ async function doQuiz(a,e){
   bParty();
   await ask(`<p class="q ok"><small>정답!</small>${q[1][q[2]]}</p><p class="explain">${q[3]}</p>`,[{label:'계속',value:1}]);
  } else {
-  S.wrong++;gainKi(5);b.vuln[a]=true;Music.sfx('wrong');shake=3;
+  S.wrong++;gainKi(5);recordAnswer(q,false);b.vuln[a]=true;Music.sfx('wrong');shake=3;
   bMsg(`앗, 기술이 꼬였다! ${MEMBERS[a].name}이(가) 비틀거린다 (이번 턴 받는 피해 증가)`);
   await ask(`<p class="q ng"><small>오답…</small>다시 생각해 보자!</p><p class="explain">💡 ${q[3]}</p>`,[{label:'계속',value:1}]);
  }
@@ -258,8 +261,8 @@ async function pickItem(a){
 // ---------- 적 행동 ----------
 function pickVictim(){const p=aliveP();return p[(Math.random()*p.length)|0]}
 function hurt(i,raw,quiet){
- const b=B;let d=raw;if(b.defend[i])d*=.5;if(b.guardAll)d*=.3;if(b.vuln[i])d*=1.5;d*=1-Math.min(.25,(level()-1)*.02);
- d=Math.max(1,Math.round(d));S.hp[i]=Math.max(0,S.hp[i]-d);b.pFlash[i]=1;gainKi(6);
+ const b=B;let d=raw*teacherDmgMul();if(teacherGod())d=0;if(b.defend[i])d*=.5;if(b.guardAll)d*=.3;if(b.vuln[i])d*=1.5;d*=1-Math.min(.25,(level()-1)*.02);
+ d=teacherGod()?0:Math.max(1,Math.round(d));S.hp[i]=Math.max(0,S.hp[i]-d);b.pFlash[i]=1;gainKi(6);
  fl(BPOS[i].x,BPOS[i].y-44,'-'+d,'#ff6b5b');if(!quiet)Music.sfx('hurt');
  if(S.hp[i]<=0)fl(BPOS[i].x,BPOS[i].y-62,'쓰러졌다!','#ff9a8a');
  bParty();hud();return d;
@@ -446,6 +449,7 @@ function mashGame(e){
 // ---------- 승리/패배 ----------
 async function victory(){
  const b=B,st=b.st,o=b.opts;
+ if(o.practice){Music.play('victory',null);bMsg('연습 전투 승리! (진행 상황은 바뀌지 않아요)');await ask('<p class="q"><small>교사용 연습</small>연습 전투가 끝났습니다.</p>',[{label:'필드로 돌아가기',value:1}]);healAll();endBattle('practice');return}
  const xp=Math.round(b.enemies.reduce((a,e)=>a+e.xp,0)*(1+st*.3)),coins=Math.round(b.enemies.reduce((a,e)=>a+e.coin,0)*(1+st*.2));
  const before=level();S.xp+=xp;S.coins+=coins;S.defeated+=b.enemies.length;
  let extra=[];
@@ -462,7 +466,9 @@ async function victory(){
  endBattle('win');
 }
 async function defeat(){
- const b=B;const lost=Math.floor(S.coins*.2);S.coins-=lost;
+ const b=B;
+ if(b.opts.practice){bMsg('연습 전투에서 졌다! (진행 상황은 바뀌지 않아요)');await ask('<p class="q"><small>교사용 연습</small>일행이 쓰러졌지만 연습이라 괜찮아요.</p>',[{label:'필드로 돌아가기',value:1}]);healAll();endBattle('practice');return}
+ const lost=Math.floor(S.coins*.2);S.coins-=lost;
  bMsg('일행이 모두 쓰러졌다… 눈앞이 캄캄해진다…');Music.sfx('wrong');
  await ask(`<p class="q"><small>허허 도사</small>「허허, 무리하지 말거라. 해설을 다시 읽고, 도구를 챙겨서 다시 오너라!」</p><p class="explain">${lost?`냥 ${lost}을(를) 잃었다. `:''}출발 지점에서 회복한다.</p>`,[{label:'정신 차리기',value:1}]);
  healAll();S.ki=Math.max(S.ki,20);save();log('출발 지점에서 정신을 차렸다. 체력이 회복되었다.','red');endBattle('lose');

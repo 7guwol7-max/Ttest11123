@@ -155,3 +155,54 @@ textarea{width:100%;min-height:80px;font:inherit;background:#0c1550;color:#fff;b
   .bmsg{font-size:clamp(10px,2.6cqw,15px);padding:.6cqw 1.4cqw}
   .bparty{font-size:clamp(9px,2.3cqw,13px)}
 }
+
+/* 교사용 */
+.tbtn{border-color:#7be38a!important;color:#c8ffd0}
+#teachbadge{color:#7be38a;margin-right:6px}
+.classnote{background:#0b3a1a;border:2px solid #7be38a;color:#d8ffe0;padding:.5em .8em;border-radius:6px;font-size:clamp(11px,1.8cqw,15px)}
+dialog.wide{max-width:min(860px,96vw);width:min(860px,96vw);max-height:92vh}
+dialog h3{color:var(--gold);font-weight:normal;margin:14px 0 6px;font-size:17px}
+dialog h3 small{color:#c9cdf0;font-size:12px}
+.ttabs{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 4px;border-bottom:2px solid #6a7ad8;padding-bottom:6px}
+.ttabs button{background:#0c1550;border:2px solid #6a7ad8;padding:5px 10px}
+.ttabs button.on{border-color:var(--gold);color:var(--gold);background:#2b3a9e}
+.trow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+dialog label{font-size:14px}
+dialog select,dialog input[type=text],dialog input[type=password],dialog input:not([type]),dialog textarea{font:inherit;background:#0c1550;color:#fff;border:2px solid #6a7ad8;padding:5px 7px;border-radius:4px}
+dialog textarea{width:100%;min-height:0}
+label.blk{display:block;margin:6px 0}
+label.chk{display:block;margin:4px 0}
+dialog button.primary{background:linear-gradient(#ffd75e,#e09a2a);color:#3a1404;border-color:#fff3c4}
+dialog button.mini{padding:2px 7px;font-size:12px}
+.qch{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.qch label{display:flex;gap:6px;align-items:center}
+.qch input:not([type=radio]){flex:1;min-width:0}
+.qch input[type=radio]{width:18px;height:18px;accent-color:#ffd75e}
+.qlist{max-height:240px;overflow:auto;border:1px solid #6a7ad8;padding:4px 8px;border-radius:4px}
+.qitem{padding:6px 0;border-bottom:1px dashed #4a5ab0;font-size:14px}
+.qitem .tag{color:#3a1404;background:#ffd75e;padding:0 5px;border-radius:3px;font-size:12px}
+.qitem small{color:#c9cdf0}
+.qbtns{display:inline-flex;gap:4px;margin-left:6px}
+.tmsg{font-size:13px}.tmsg.ok{color:#7be38a}.tmsg.ng{color:#ff9a8a}
+.warn{color:#ffd0a0;font-size:13px}
+.filebtn{display:inline-block;background:linear-gradient(#5a3a1a,#3a240e);border:2px solid var(--frame);border-radius:3px;padding:5px 10px;font-size:13px;cursor:pointer}
+.filebtn input{display:none}
+.ttable{border-collapse:collapse;font-size:14px;margin:4px 0}
+.ttable th,.ttable td{border:1px solid #6a7ad8;padding:3px 10px;text-align:center}
+details{margin-top:10px;font-size:14px}details summary{cursor:pointer;color:var(--gold)}
+@media (max-width:700px){.qch{grid-template-columns:1fr}}
+
+/* 우리 반 연동판 */
+.cjoin{margin:1.2cqw auto;padding:.8em 1em;background:#1a0a05cc;border:2px solid #ffd75e;border-radius:8px;display:inline-block;font-size:clamp(11px,1.9cqw,16px)}
+.cjoin b{color:#ffe066;font-weight:normal;display:block;margin-bottom:.3em}
+.cjrow{display:flex;gap:6px;justify-content:center}
+.cjoin input{font:inherit;width:11em;text-transform:uppercase;letter-spacing:.15em;text-align:center;background:#0c1550;color:#fff;border:2px solid #6a7ad8;border-radius:4px;padding:.3em .5em}
+.cjoin button{font:inherit;background:linear-gradient(#ffd75e,#e09a2a);color:#3a1404;border:2px solid #fff3c4;border-radius:4px;padding:.3em .8em}
+.cjoin small{display:inline;color:#ffd9b0;margin-top:.3em}
+#cjoinstate{color:#7be38a}
+#classbadge{color:#9ad8ff}
+.synctoast{position:absolute;left:50%;top:13cqw;transform:translateX(-50%);z-index:6;background:#0b3a1a;border:2px solid #7be38a;color:#e0ffe8;padding:.6em 1.1em;border-radius:8px;font-size:clamp(11px,1.9cqw,16px);max-width:86%;text-align:center;box-shadow:0 4px 0 #0008;pointer-events:none}
+.synctoast.show{animation:toast 5s ease forwards}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,-8px)}8%{opacity:1;transform:translate(-50%,0)}85%{opacity:1}100%{opacity:0}}
+.bigcode{font-size:44px;letter-spacing:.25em;color:var(--gold);text-align:center;background:#0c1550;border:3px solid var(--gold);border-radius:8px;padding:6px 0;margin:6px 0}
+.secret{letter-spacing:.15em}
