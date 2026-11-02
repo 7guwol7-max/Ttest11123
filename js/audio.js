@@ -36,7 +36,10 @@ function ensure(){
 }
 let noiseBuf=null;
 function tone(wave,m,t,dur,vol,dest){
- if(m==null)return;
+ if(m==null||!ac)return;
+ try{toneRaw(wave,m,t,dur,vol,dest)}catch(err){/* 소리 오류가 게임 진행을 막지 않도록 */}
+}
+function toneRaw(wave,m,t,dur,vol,dest){
  const g=ac.createGain();g.connect(dest||master);
  let src;
  if(wave==='noise'){

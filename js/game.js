@@ -291,11 +291,13 @@ function drawGate(X,Y,t){
 // ---------- 전투 ----------
 const BPOS=[{x:372,y:138},{x:414,y:118},{x:428,y:156}];
 function startBattle(m){
+ if(B||trans||!m)return;
+ if(!partyIdx().some(i=>S.hp[i]>0))healAll();
  const boss=m.id===2;
  B={m,id:m.id,boss,stage:S.stage,name:ENEMY_NAMES[S.stage][m.id],type:ENEMY_TYPES[m.id],max:boss?300:100,hp:boss?300:100,qs:boss?[0,1,2]:[m.id],qn:0,phase:'intro',sel:0,order:null,anim:null,hitCount:0,eFlash:0,eShake:0,eAlpha:1,ex:110,ey:150,pFlash:[0,0,0],pOff:[0,0,0],fx:[]};
  mode='battle';keys={};path=[];dialog=null;$('#dialog').hidden=true;
  Music.sfx('encounter');
- trans={t0:performance.now(),dur:600,kind:'swirl',mid:()=>{Music.play(boss?'boss':'battle');$('#battleui').hidden=false;$('#questbox').hidden=true;$('#zone').hidden=true;bIntro()}};
+ trans={t0:performance.now(),dur:600,kind:'swirl',mid:()=>{if(!B)return;Music.play(boss?'boss':'battle');$('#battleui').hidden=false;$('#questbox').hidden=true;$('#zone').hidden=true;bIntro()}};
 }
 function bParty(){
  $('#bparty').innerHTML=partyIdx().map(i=>{const hp=S.hp[i],mx=maxHp(i);return `<div class="pm ${hp<=0?'ko':hp<mx*.3?'low':''}"><b>${MEMBERS[i].name}</b><div class="bar"><i style="transform:scaleX(${Math.max(0,hp)/mx})"></i></div><span>${hp} / ${mx}</span></div>`}).join('')+`<div class="pm"><span>회복약 ${S.potions}개</span></div>`;
@@ -332,7 +334,7 @@ function bAnswer(choice){
   bMsg(`${who.map(i=>MEMBERS[i].name).join('·')}의 「${moveName}」!`);
   Music.sfx('ok');
   B.anim={kind:'attack',who,t0:performance.now(),dur:900,hitAt:420,hit:false,after:()=>{
-   B.hp=Math.max(0,B.hp-100);
+   B.hp=Math.max(0,B.hp-100);B.phase='result';
    $('#bcmd').innerHTML=`<p class="q ok"><small>정답!</small>${q[1][q[2]]}</p><p class="explain">${q[3]}</p><button class="choice sel" data-act="next">${B.hp<=0?'승리!':'계속하기'}</button>`;
    bMsg(`${B.name}에게 100 피해! (남은 체력 ${B.hp} / ${B.max})`);
    bindChoices(()=>{if(B.hp<=0)bVictory();else{B.qn++;bCommand()}});
@@ -342,7 +344,7 @@ function bAnswer(choice){
   const alive=partyIdx().filter(i=>S.hp[i]>0);const target=alive[(Math.random()*alive.length)|0];
   bMsg(`앗, 기술이 꼬였다! ${B.name}의 반격!`);Music.sfx('wrong');
   B.anim={kind:'enemy',target,t0:performance.now(),dur:800,hitAt:380,hit:false,after:()=>{
-   bParty();const allKO=partyIdx().every(i=>S.hp[i]<=0);
+   bParty();B.phase='result';const allKO=partyIdx().every(i=>S.hp[i]<=0);
    $('#bcmd').innerHTML=`<p class="q ng"><small>오답… ${MEMBERS[target].name} 체력 -20</small>다시 생각해 보자!</p><p class="explain">💡 ${q[3]}</p><button class="choice sel" data-act="next">${allKO?'…':'다시 도전'}</button>`;
    bindChoices(()=>{if(allKO)bDefeat();else bCommand()});
   }};
@@ -350,7 +352,8 @@ function bAnswer(choice){
  save();
 }
 function bPotion(){
- if(S.potions<=0){bMsg('회복약이 없다! 도사님께 가면 무료로 회복할 수 있다.');Music.sfx('wrong');return}
+ // 회복약이 없을 때도 선택지를 다시 연결해 전투가 멈추지 않게 한다
+ if(S.potions<=0){bCommand();bMsg('회복약이 없다! NPC에게 가면 무료로 회복할 수 있다.');Music.sfx('wrong');return}
  S.potions--;partyIdx().forEach(i=>S.hp[i]=Math.min(maxHp(i),Math.max(S.hp[i],0)+50));Music.sfx('heal');
  for(const i of partyIdx())floaters.push({x:BPOS[i].x,y:BPOS[i].y-36,text:'+50',color:'#7be38a',t0:performance.now()});
  save();hud();bParty();bMsg('회복약을 나눠 마셨다! 일행 체력 +50');bCommand();bMsg('회복약을 나눠 마셨다! 일행 체력 +50');
@@ -368,7 +371,7 @@ function bVictory(){
  save();hud();
 }
 function bDefeat(){
- B.phase='end';bMsg('일행이 모두 쓰러졌다… 눈앞이 캄캄해진다…');
+ B.phase='end';B.lost=true;bMsg('일행이 모두 쓰러졌다… 눈앞이 캄캄해진다…');
  $('#bcmd').innerHTML=`<p class="q"><small>허허 도사</small>「허허, 무리하지 말거라. 해설을 다시 읽고 오면 이길 수 있다!」</p><button class="choice sel" data-act="next">마을에서 정신 차리기</button>`;
  bindChoices(()=>{healAll();pl.x=4;pl.y=13;pl.dir='down';save();endBattle(true);log('출발 지점에서 정신을 차렸다. 체력이 회복되었다.','red')});
 }
@@ -384,7 +387,7 @@ function endBattle(warp){
 }
 let choiceAct=null;
 function bindChoices(fn){
- const btns=[...$('#bcmd').querySelectorAll('.choice')];choiceAct=fn;B.sel=Math.max(0,Math.min(B.sel,btns.length-1));if(B.phase==='quiz'||B.phase==='cmd')B.sel=0;
+ const btns=[...$('#bcmd').querySelectorAll('.choice')];choiceAct=fn;B.lastFn=fn;B.stuck=0;B.sel=Math.max(0,Math.min(B.sel,btns.length-1));if(B.phase==='quiz'||B.phase==='cmd')B.sel=0;
  btns.forEach((b,k)=>{b.onclick=()=>{if(choiceAct===fn){choiceAct=null;Music.sfx('select');fn(b.dataset.act)}};b.onmouseenter=()=>{B&&(B.sel=k);markSel()}});
  markSel();
 }
@@ -457,7 +460,7 @@ function drawFloaters(t){
 // ---------- 전환 효과 ----------
 function drawTrans(t){
  if(!trans)return;const k=(t-trans.t0)/trans.dur;
- if(k>=.5&&!trans.done){trans.done=true;trans.mid&&trans.mid()}
+ if(k>=.5&&!trans.done){trans.done=true;try{trans.mid&&trans.mid()}catch(err){console.error(err)}}
  if(k>=1){trans=null;return}
  const v=k<.5?k*2:2-k*2;
  if(trans.kind==='swirl'){ctx.fillStyle='#000';const n=12;for(let i=0;i<n;i++){const h=320/n;ctx.fillRect(i%2?480*(1-v):0,i*h,480*v,h)}if(k<.5){ctx.fillStyle=`rgba(255,255,255,${Math.max(0,.6-k*2)})`;ctx.fillRect(0,0,480,320)}}
@@ -466,20 +469,46 @@ function drawTrans(t){
 
 // ---------- 메인 루프 ----------
 let last=performance.now();
+// 안전장치: 화면(DOM)과 게임 상태가 어긋나 멈춘 것처럼 보이는 상황을 매 프레임 자동 복구
+function guard(t){
+ if(mode==='title')return;
+ const dlg=$('#dialog'),bui=$('#battleui');
+ if(mode==='dialog'&&!dialog)mode='field';
+ if(dialog&&mode==='field'&&!trans)mode='dialog';
+ if(!dialog&&!dlg.hidden)dlg.hidden=true;
+ if(dialog&&dlg.hidden)dlg.hidden=false;
+ if(mode!=='battle'&&!B&&!trans&&!bui.hidden){bui.hidden=true;$('#questbox').hidden=false}
+ if(mode==='battle'&&!B&&!trans){mode='field';bui.hidden=true;$('#questbox').hidden=false;cooldown=t+1500}
+ if(mode==='battle'&&B&&!trans){
+  if(bui.hidden){bui.hidden=false;$('#questbox').hidden=true}
+  if(!B.anim&&!choiceAct){B.stuck=B.stuck||t;if(t-B.stuck>1200){B.stuck=0;recoverBattle()}}else B.stuck=0;
+ }
+ if(mode==='field'&&pl.t>=1&&!walkable(pl.x,pl.y,true)){pl.x=4;pl.y=13;pl.fx=4;pl.fy=13}
+}
+function recoverBattle(){
+ const btns=$('#bcmd').querySelectorAll('.choice');
+ if(B.phase==='end'){if(B.lost){healAll();pl.x=4;pl.y=13;pl.dir='down';save();endBattle(true)}else endBattle();return}
+ if(btns.length&&B.lastFn&&B.phase!=='anim'){bindChoices(B.lastFn);return}
+ bCommand();
+}
 function frame(t){
- const dt=Math.min(50,t-last);last=t;now=t;
- if(mode==='field'&&!trans&&!$('#modal').open){updateField(dt);updateMobs(t)}
- if(mode==='field'||mode==='dialog'){for(const m of E.mobs)if(m.t<1)m.t=Math.min(1,m.t+dt/260)}
- if(mode==='dialog'){updateDialog();if(pl.t<1)pl.t=Math.min(1,pl.t+dt/STEP_MS)}
- if(mode==='battle'&&B)updateBattle(t);
- ctx.save();
- if(shake>0){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.85;if(shake<.4)shake=0}
- if(mode==='battle'&&B&&$('#battleui').hidden===false)drawBattle(t);
- else if(E)drawField(t);
- drawFloaters(t);
- ctx.restore();
- drawTrans(t);
  requestAnimationFrame(frame);
+ try{
+  const dt=Math.min(50,t-last);last=t;now=t;
+  guard(t);
+  if(mode==='field'&&!trans&&!$('#modal').open){updateField(dt);updateMobs(t)}
+  if(mode==='field'||mode==='dialog'){for(const m of E.mobs)if(m.t<1)m.t=Math.min(1,m.t+dt/260)}
+  if(mode==='dialog'){updateDialog();if(pl.t<1)pl.t=Math.min(1,pl.t+dt/STEP_MS)}
+  if(mode==='battle'&&B)updateBattle(t);
+  ctx.save();
+  try{
+   if(shake>0){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.85;if(shake<.4)shake=0}
+   if(mode==='battle'&&B&&$('#battleui').hidden===false)drawBattle(t);
+   else if(E)drawField(t);
+   drawFloaters(t);
+  }finally{ctx.restore()}
+  drawTrans(t);
+ }catch(err){console.error(err)}
 }
 
 // ---------- 입력 ----------
@@ -495,7 +524,8 @@ addEventListener('keydown',ev=>{
  if(mode==='title'){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();$('#play').click()}return}
  if($('#modal').open||ev.target.tagName==='TEXTAREA'||ev.target.tagName==='INPUT')return;
  const k=ev.key;
- if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(k))ev.preventDefault();
+ // Enter/Space가 포커스된 버튼까지 눌러 두 번 처리되는 것을 막는다
+ if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Enter'].includes(k))ev.preventDefault();
  if(mode==='battle'){if(!ev.repeat)battleKey(k);return}
  if(k===' '||k==='Enter'){if(!ev.repeat)act();return}
  if(mode==='dialog')return;
@@ -542,7 +572,13 @@ function toggleSound(){S.sound=!S.sound;Music.setEnabled(S.sound);save();hud();i
 $('#sound').onclick=toggleSound;
 $('#help').onclick=()=>openModal(`<h2>취풍 무협전 안내</h2><p><b>이동</b> 방향키 / WASD · 마우스·터치로 바닥 누르기<br><b>대화·조사</b> Space / Enter (대상을 바라보고)<br><b>전투</b> ↑↓←→ 선택, Space/Enter 결정, 숫자키 1~3 바로 선택<br><b>기타</b> 1 회복약 · J 수련 수첩 · M 소리 켜기/끄기</p><p>요괴에게 닿으면 사이드뷰 전투가 시작됩니다. <b>「필살기」</b>를 고르면 문제가 나오고, 정답을 고르면 동료의 필살기가 터져 100 피해를 줍니다. 떠돌이 요괴는 1번, 보스는 3번 맞혀야 쓰러집니다.</p><p>틀리면 요괴가 반격해 동료 한 명의 체력이 20 줄고 해설이 나옵니다. 해설을 읽고 다시 도전하세요. 모두 쓰러져도 출발 지점에서 회복해 다시 도전할 수 있어요.</p><p class="muted">진행 순서: NPC와 대화 → 떠돌이 요괴 2마리 → 강 건너 남쪽 비석 → 보스 → 북동쪽 성문. 노란 화살표가 다음 목표를 가리킵니다. 2장에서는 보미, 3장에서는 곰돌이 동료가 됩니다.</p>`);
 $('#video').onclick=()=>openModal('<h2>학습 영상 · 웰컴 투 디지털 월드</h2><iframe src="https://www.youtube-nocookie.com/embed/kB666Wpu-Ls" title="양성평등 교육 영상" allowfullscreen></iframe><p><a href="https://www.youtube.com/watch?v=kB666Wpu-Ls" target="_blank" rel="noopener">YouTube에서 영상 보기 ↗</a></p>');
-$('#reset').onclick=()=>{openModal('<h2>새 원정을 시작할까요?</h2><p>경험치, 동료, 인장, 약속과 진행이 모두 초기화됩니다.</p><button id="keep">기록 유지</button> <button id="new">초기화하고 시작</button>');$('#keep').onclick=closeModal;$('#new').onclick=()=>{const snd=S.sound;S=fresh();S.sound=snd;pl.x=S.x;pl.y=S.y;pl.dir='down';try{localStorage.removeItem(KEY)}catch{}closeModal();if(B){B=null;$('#battleui').hidden=true;$('#questbox').hidden=false;$('#zone').hidden=false}$('#dialog').hidden=true;dialog=null;mode='field';loadStage();chapterCard();Music.play('field');save();log('새 원정을 시작했다.','gold')}};
+$('#reset').onclick=()=>{openModal('<h2>새 원정을 시작할까요?</h2><p>경험치, 동료, 인장, 약속과 진행이 모두 초기화됩니다.</p><button id="keep">기록 유지</button> <button id="new">초기화하고 시작</button>');$('#keep').onclick=closeModal;$('#new').onclick=()=>{
+ const snd=S.sound;S=fresh();S.sound=snd;pl.x=S.x;pl.y=S.y;pl.dir='down';try{localStorage.removeItem(KEY)}catch{}
+ closeModal();trans=null;choiceAct=null;B=null;dialog=null;floaters=[];
+ $('#battleui').hidden=true;$('#questbox').hidden=false;$('#dialog').hidden=true;
+ if($('#splash')){$('#splash').remove()}
+ mode='field';loadStage();chapterCard();Music.play('field');save();log('새 원정을 시작했다.','gold');introHint();cv.focus()}};
+function introHint(){setTimeout(()=>{if(mode==='field'&&!S.talked&&S.stage===0&&!dialog&&!B&&!trans&&!$('#modal').open)say([['baram','하아암~ 잘 잤다. …응? 사부님이 길 위에서 손짓하고 계시네.'],['sys','방향키(WASD)로 걸어가서 Space로 말을 걸자. 노란 화살표가 목표야!']])},1600)}
 function ending(){
  Music.play('ending');
  openModal(`<h2>마지막 장 · 평등의 나라를 되찾다</h2><canvas class="endart" id="endart" width="200" height="56"></canvas><p>다섯 고을의 요괴와 불평등 대마왕을 물리쳤다!<br>바람: "공부로 이기는 무공… 생각보다 멋진데요, 사부님?"<br>허허 도사: "허허, 이제야 알았느냐. 진짜 무공은 일상에서 쓰는 거란다."</p><p>이제 <b style="color:#ffd75e">존중 · 보호 · 자유 · 용기 · 연대</b>의 힘을 현실에서도 펼쳐 보자.</p><div class="badgegrid">${stages.map(s=>`<span class="on">${s.power}</span>`).join('')}</div><p class="muted">레벨 ${level()} · 정답 필살기 ${S.right}회 · 오답 ${S.wrong}회 · 물리친 요괴 ${S.defeated}마리</p><label for="pledge">나의 실천 약속</label><textarea id="pledge" maxlength="300" placeholder="친구를 놀리는 말에 동조하지 않고…">${S.pledge.replace(/</g,'&lt;')}</textarea><p class="muted">개인정보는 적지 마세요. 이 브라우저에만 저장됩니다.</p><button id="promise">약속 저장 · 원정 기록 내려받기</button>`);
@@ -557,11 +593,16 @@ function titleArt(){const c=$('#titleart'),g=c.getContext('2d');g.imageSmoothing
  [['goblin',22,1],['baram',62,0],['bomi',84,0],['gomdol',106,0],['fox',140,1]].forEach(([k,x,e])=>{const img=Sprites.get(k,'front',0,e?S.stage:0);g.drawImage(img,x-img.width,38-img.height*2,img.width*2,img.height*2)})}
 $('#play').onclick=()=>{
  $('#splash').remove();mode='field';Music.setEnabled(S.sound);loadStage();
- if(S.finished){Music.play('ending');ending()}else{Music.play('field');chapterCard();if(!S.talked&&S.stage===0&&!S.xp)setTimeout(()=>{if(mode==='field'&&!S.talked)say([['baram','하아암~ 잘 잤다. …응? 사부님이 길 위에서 손짓하고 계시네.'],['sys','방향키(WASD)로 걸어가서 Space로 말을 걸자. 노란 화살표가 목표야!']])},1600)}
+ if(S.finished){Music.play('ending');ending()}else{Music.play('field');chapterCard();if(!S.talked&&S.stage===0&&!S.xp)introHint()}
  cv.focus();
 };
 document.fonts&&document.fonts.ready.then(titleArt);titleArt();
+// 저장된 체력이 모두 0이거나 비정상이면 회복
+S.hp=S.hp.map((v,i)=>Math.max(0,Math.min(maxHp(i),Number.isFinite(+v)?+v:maxHp(i))));
+if(!partyIdx().some(i=>S.hp[i]>0))healAll();
+// 마우스로 누른 버튼에 포커스가 남아 키 입력을 가로채지 않도록
+document.querySelectorAll('nav button,.hotkeys button').forEach(b=>b.addEventListener('click',()=>{if(!$('#modal').open)cv.focus()}));
 grid=makeMap(S.stage);mapImg=renderMap(S.stage);
 loadStage();hud();
 requestAnimationFrame(frame);
-window.__game={get S(){return S},get mode(){return mode},get B(){return B},get E(){return E},pl,interact,startBattle,bAnswer,walkable,bfs,makeMap,get grid(){return grid},loadStage};
+window.__game={get dialog(){return dialog},get choiceAct(){return choiceAct},get trans(){return trans},get S(){return S},get mode(){return mode},get B(){return B},get E(){return E},pl,interact,startBattle,bAnswer,walkable,bfs,makeMap,get grid(){return grid},loadStage};

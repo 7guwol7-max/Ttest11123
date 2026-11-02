@@ -4,6 +4,8 @@
   --win1:#2a3f9e; --win2:#101a5a; --winb:#f4ecd8; --gold:#ffd75e; --red:#ff6b5b; --green:#7be38a;
 }
 *{box-sizing:border-box}
+/* hidden 속성이 display:flex 등에 덮이지 않도록 (대화창이 남아 화면이 멈춰 보이던 문제) */
+[hidden]{display:none!important}
 html,body{margin:0;background:radial-gradient(circle at 50% 0%,#3a2716,#140d08 70%);color:var(--ink);font-family:NeoDunggeunmo,"Galmuri11","DungGeunMo",monospace;min-height:100vh}
 button{font:inherit;color:inherit;cursor:pointer}
 .client{width:min(980px,100%,calc((100vh - 250px) * 1.5 + 20px));min-width:min(100%,560px);margin:8px auto;background:#2a1d12;border:3px solid var(--frame);box-shadow:0 0 0 3px #1a0f07,0 0 0 6px var(--frame2),0 18px 50px #000a;padding:0 8px 6px}
@@ -44,6 +46,7 @@ nav button:hover,.hotkeys button:hover,dialog button:hover{filter:brightness(1.2
 .bcmd .explain{color:#ffe9a8;margin:.4em 0 0}
 .bcmd .ok{color:var(--green)}.bcmd .ng{color:var(--red)}
 .choice{display:block;width:100%;text-align:left;margin:.35em 0;background:#0c1550;border:2px solid #6a7ad8;font-size:inherit;padding:.35em .7em;border-radius:4px;line-height:1.35}
+.choice:disabled{opacity:.45;cursor:not-allowed}
 .choice.sel,.choice:hover{border-color:var(--gold);background:#2b3a9e;color:var(--gold)}
 .choice.sel::before{content:"▶ ";}
 .choice kbd{color:var(--gold);margin-right:.4em}
