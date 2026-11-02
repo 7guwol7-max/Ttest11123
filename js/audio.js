@@ -21,6 +21,11 @@ const SONGS={
   {wave:'sawtooth',vol:.035,seq:parse(bassLine(['A','A','F','F','C','C','G','A']))},
   {wave:'noise',vol:.035,seq:[].concat(...Array(32).fill(parse('C4:1 C4:1')))}
  ]},
+ trial:{bpm:176,tracks:[
+  {wave:'square',vol:.05,seq:parse('B4:1 E5:1 G5:1 E5:1 A5:1 G5:1 E5:2 D5:1 E5:1 G5:2 E5:2 B4:2 B4:1 E5:1 G5:1 A5:1 B5:2 A5:2 G5:1 A5:1 G5:1 E5:1 D5:4 E5:1 G5:1 A5:1 B5:1 D6:2 B5:2 A5:1 B5:1 A5:1 G5:1 E5:2 G5:2 A5:2 G5:1 E5:1 D5:2 B4:2 E5:6 -:2')},
+  {wave:'triangle',vol:.1,seq:parse(bassLine(['E','E','C','D','E','E','C','B']))},
+  {wave:'noise',vol:.035,seq:[].concat(...Array(16).fill(parse('C4:1 C4:1 -:1 C4:1')))}
+ ]},
  victory:{bpm:140,once:true,tracks:[
   {wave:'square',vol:.06,seq:parse('E5:1 G5:1 A5:1 C6:3 A5:1 C6:2 D6:2 E6:6 -:2')},
   {wave:'triangle',vol:.1,seq:parse('A3:3 E3:3 A3:2 C4:4 G3:4 A3:6 -:2')}
@@ -84,6 +89,8 @@ function sfx(kind){
   heal:[['triangle',72,0,.08,.1],['triangle',76,.07,.08,.1],['triangle',79,.14,.08,.1],['triangle',84,.21,.16,.1]],
   chime:[['triangle',84,0,.2,.1],['triangle',88,.12,.2,.1],['triangle',91,.24,.4,.1]],
   door:[['square',60,0,.06,.05],['square',67,.07,.06,.05],['square',72,.14,.12,.05]],
+  jump:[['square',67,0,.05,.05],['square',74,.05,.05,.05],['square',79,.1,.06,.04]],
+  splash:[['noise',60,0,.18,.12],['square',45,0,.15,.05],['triangle',72,.12,.08,.06],['triangle',79,.2,.08,.05]],
   encounter:[['square',72,0,.05,.05],['square',76,.05,.05,.05],['square',79,.1,.05,.05],['square',84,.15,.05,.05],['noise',60,.2,.1,.08]],
   bump:[['square',40,0,.04,.04]]
  }[kind]||[];

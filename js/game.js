@@ -5,7 +5,7 @@ const W=30,H=20,T=16,KEY='equality-rpg-chwipung-v1';
 const STEP_MS=150;
 
 // ---------- 상태 ----------
-function fresh(){return {stage:0,x:4,y:13,dir:'down',hp:[100,90,130],xp:0,potions:3,kills:[],talked:false,shrine:false,finished:false,pledge:'',sound:true,right:0,wrong:0,defeated:0}}
+function fresh(){return {stage:0,x:4,y:13,dir:'down',hp:[100,90,130],xp:0,potions:3,kills:[],talked:false,shrine:false,finished:false,trial:false,trialFails:0,trialRec:[],pledge:'',sound:true,right:0,wrong:0,defeated:0}}
 let S=fresh();
 try{const a=JSON.parse(localStorage.getItem(KEY));if(a&&Number.isInteger(a.stage)&&a.stage>=0&&a.stage<5&&Array.isArray(a.kills)){S={...S,...a};S.kills=S.kills.filter(v=>Number.isInteger(v)&&v>=0&&v<3);if(!Array.isArray(S.hp)||S.hp.length!==3)S.hp=[100,90,130];S.potions=Math.max(0,Math.min(20,Number(S.potions)||0));S.pledge=String(S.pledge||'').slice(0,300)}}catch{}
 let mode='title',grid=null,mapImg=null,E=null,keys={},path=[],pendingTarget=null,lastMove=0,cooldown=0,now=0,trans=null,dialog=null,B=null,shake=0,floaters=[];
@@ -35,7 +35,7 @@ function makeMap(stage){
  for(let y=2;y<=17;y++){a[y][4]=4;a[y][25]=4}
  for(let y=3;y<6;y++)for(let x=3;x<7;x++)a[y][x]=5;
  if(stage===0||stage===4)for(let y=13;y<16;y++)for(let x=19;x<23;x++)a[y][x]=5;
- for(const [x,y] of [[4,13],[7,11],[10,7],[11,14],[10,8],[11,13],[23,8],[26,4],[24,16]])for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy;if(X>0&&X<W-1&&Y>0&&Y<H-1&&(a[Y][X]===1||a[Y][X]===5&&!(stage===0||stage===4)))a[Y][X]=0}
+ for(const [x,y] of [[4,13],[7,11],[10,7],[11,14],[10,8],[11,13],[23,8],[26,4],[24,16],[21,8]])for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy;if(X>0&&X<W-1&&Y>0&&Y<H-1&&(a[Y][X]===1||a[Y][X]===5&&!(stage===0||stage===4)))a[Y][X]=0}
  // 게이트 주변 진입로
  for(let y=4;y<=8;y++)if(a[y][24]===1)a[y][24]=0;
  return a;
@@ -47,13 +47,14 @@ function entAt(x,y){
  if(E.npc.x===x&&E.npc.y===y)return E.npc;
  if(E.stele.x===x&&E.stele.y===y)return E.stele;
  if(E.gate.x===x&&E.gate.y===y)return E.gate;
+ if(E.trial&&E.trial.x===x&&E.trial.y===y)return E.trial;
  for(const m of E.mobs)if(!S.kills.includes(m.id)&&m.x===x&&m.y===y)return m;
  return null;
 }
 function loadStage(){
  grid=makeMap(S.stage);mapImg=renderMap(S.stage);
  const sh=S.stage%2;
- E={npc:{kind:'npc',x:7,y:11},stele:{kind:'stele',x:24,y:16},gate:{kind:'gate',x:26,y:4},
+ E={npc:{kind:'npc',x:7,y:11},stele:{kind:'stele',x:24,y:16},gate:{kind:'gate',x:26,y:4},trial:{kind:'trial',x:21,y:8},
   mobs:[[0,10,7+sh],[1,11,14-sh],[2,23,8]].map(([id,x,y])=>({kind:'mob',id,x,y,hx:x,hy:y,fx:x,fy:y,t:1,next:0}))};
  if(!walkable(pl.x,pl.y)){pl.x=4;pl.y=13}
  pl.fx=pl.x;pl.fy=pl.y;pl.t=1;
@@ -124,8 +125,9 @@ function questText(){
  const k=[0,1].filter(i=>S.kills.includes(i)).length;
  if(k<2)return `② 떠돌이 요괴 혼내 주기 ${k} / 2<br><span>정답을 외치면 필살기 발동!</span>`;
  if(!S.shrine)return '③ 강 건너 남쪽 비석 조사<br><span>다리를 건너 오른쪽 아래</span>';
- if(!S.kills.includes(2))return `④ ${ENEMY_NAMES[S.stage][2]} 처치<br><span>정답 필살기 3번 필요</span>`;
- return S.stage===4?'⑤ 북동쪽 성문으로!<br><span>마지막 문을 열자</span>':'⑤ 북동쪽 성문으로 이동<br><span>다음 고을로 떠나자</span>';
+ if(!S.trial)return `④ 외줄 수련 · ${TRIAL.names[S.stage]}<br><span>보스 결계 옆 깃발 수련터</span>`;
+ if(!S.kills.includes(2))return `⑤ ${ENEMY_NAMES[S.stage][2]} 처치<br><span>정답 필살기 3번 필요</span>`;
+ return S.stage===4?'⑥ 북동쪽 성문으로!<br><span>마지막 문을 열자</span>':'⑥ 북동쪽 성문으로 이동<br><span>다음 고을로 떠나자</span>';
 }
 function hud(){
  $('#quest').innerHTML=questText();
@@ -180,20 +182,26 @@ function interact(e){
  if(e.kind==='mob'){
   if(!S.talked){say([['sys',`${josa(SCRIPTS[S.stage].npcName,'이/가')} 부르고 있다. 이야기부터 듣고 오자.`]]);return}
   if(e.id===2&&!S.shrine){say([['sys','보라색 봉인 결계가 길을 막고 있다. 강 건너 남쪽 비석을 먼저 조사하자.']]);return}
+  if(e.id===2&&!S.trial){say([['sys','결계가 아직 남아 있다! 바로 옆 깃발 수련터에서 외줄 수련을 통과하면 완전히 풀린다.']]);return}
   startBattle(e);return;
  }
  if(e.kind==='stele'){
   if(!S.talked||!S.kills.includes(0)||!S.kills.includes(1)){say([['sys','비석에 희미한 글씨가 새겨져 있다… 아직 읽을 수 없다. 떠돌이 요괴를 먼저 혼내 주자.']]);return}
   if(S.shrine){say([['sys',`「${STELE_TITLE[S.stage]}」 — ${stages[S.stage].qs[2][3]}`]]);return}
   S.shrine=true;S.potions++;partyIdx().forEach(i=>S.hp[i]=Math.min(maxHp(i),S.hp[i]+30));Music.sfx('chime');save();hud();
-  say([['sys',`수호 비석 · ${stages[S.stage].power}의 가르침\n「${STELE_TITLE[S.stage]}」`],['sys',stages[S.stage].qs[2][3]],['sys',`비석에 빛이 깃들었다! ${josa(ENEMY_NAMES[S.stage][2],'의/의')} 봉인이 풀렸다. (회복약 +1 · 체력 +30)`]],()=>log('봉인이 풀렸다! 보스를 찾아가자.','gold'));
+  say([['sys',`수호 비석 · ${stages[S.stage].power}의 가르침\n「${STELE_TITLE[S.stage]}」`],['sys',stages[S.stage].qs[2][3]],['sys',`비석에 빛이 깃들었다! ${ENEMY_NAMES[S.stage][2]}의 결계가 약해졌다. (회복약 +1 · 체력 +30)`],['sys',`보스 옆 깃발 수련터에서 「외줄 수련 · ${TRIAL.names[S.stage]}」을 통과하면 결계가 완전히 풀린다!`]],()=>log('결계가 약해졌다! 외줄 수련터로 가자.','gold'));
   return;
+ }
+ if(e.kind==='trial'){
+  if(S.trial){say([['sys','이미 통과한 수련터다. 결계는 풀려 있다!']]);return}
+  if(!S.talked||!S.shrine){say([['sys','외줄 수련터다. 아직 수련터 문이 닫혀 있다. 비석을 먼저 조사하자.']]);return}
+  startTrial();return;
  }
  if(e.kind==='gate'){
   if(!S.kills.includes(2)){say([['sys','성문이 굳게 닫혀 있다. 이 고을의 보스를 먼저 물리치자.']]);return}
   Music.sfx('door');
   if(S.stage===4){S.finished=true;save();hud();ending();return}
-  fadeTo(()=>{S.stage++;S.kills=[];S.talked=false;S.shrine=false;pl.x=4;pl.y=13;pl.dir='down';healAll();loadStage();save();chapterCard();Music.play('field')});
+  fadeTo(()=>{S.stage++;S.kills=[];S.talked=false;S.shrine=false;S.trial=false;S.trialFails=0;pl.x=4;pl.y=13;pl.dir='down';healAll();loadStage();save();chapterCard();Music.play('field')});
  }
 }
 function loadStageKeepPos(){const keep=followers;loadStage();followers.forEach(f=>{const o=keep.find(k=>k.i===f.i);if(o)Object.assign(f,{x:o.x,y:o.y,fx:o.fx,fy:o.fy});else{f.x=E.npc.x;f.y=E.npc.y;f.fx=f.x;f.fy=f.y}})}
@@ -214,10 +222,12 @@ function tryStep(dir){
  if(pl.step%8===0)save();
  return true;
 }
-let lastBump=0;
+let lastBump=0,tapDir=null;
 function updateField(dt){
  if(pl.t<1){pl.t=Math.min(1,pl.t+dt/STEP_MS);if(pl.t<1)return}
  const k=keys;let dir=k.ArrowUp||k.w||k.W?'up':k.ArrowDown||k.s||k.S?'down':k.ArrowLeft||k.a||k.A?'left':k.ArrowRight||k.d||k.D?'right':null;
+ // 아주 짧게 누른 방향키도 놓치지 않기(한 프레임 안에 떼도 한 칸 이동/방향 전환)
+ if(!dir&&tapDir)dir=tapDir;tapDir=null;
  if(dir){path=[];pendingTarget=null;tryStep(dir);hudCoords();return}
  if(path.length){const [nx,ny]=path.shift();const d=nx>pl.x?'right':nx<pl.x?'left':ny>pl.y?'down':'up';if(!tryStep(d)){path=[]}
   if(!path.length&&pendingTarget&&mode==='field'){const t=pendingTarget;pendingTarget=null;if(Math.abs(t.x-pl.x)+Math.abs(t.y-pl.y)===1)interact(t)}}
@@ -251,10 +261,11 @@ function drawField(t){
  list.push({y:E.stele.y,draw:()=>drawStele(E.stele.x*T+8,E.stele.y*T+16,t)});
  // 성문
  list.push({y:E.gate.y,draw:()=>drawGate(E.gate.x*T+8,E.gate.y*T+16,t)});
+ list.push({y:E.trial.y,draw:()=>drawTrialPost(E.trial.x*T+8,E.trial.y*T+16,t)});
  // 몬스터
  for(const m of E.mobs){if(S.kills.includes(m.id))continue;
   const X=lerp(m.fx,m.x,m.t)*T+8,Y=lerp(m.fy,m.y,m.t)*T+16;const type=ENEMY_TYPES[m.id];
-  list.push({y:m.y,draw:()=>{const bob=Math.sin(t/200+m.id)*1;if(m.id===2){Sprites.draw(ctx,type,'front',X,Y+2,1.4,{stage:st,frame:0});if(!S.shrine){ctx.strokeStyle=`rgba(190,110,255,${.5+Math.sin(t/150)*.3})`;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(X,Y-10,14,15,0,0,Math.PI*2);ctx.stroke()}}else Sprites.draw(ctx,type,'front',X,Y+1+bob,1,{stage:st})}});
+  list.push({y:m.y,draw:()=>{const bob=Math.sin(t/200+m.id)*1;if(m.id===2){Sprites.draw(ctx,type,'front',X,Y+2,1.4,{stage:st,frame:0});if(!S.trial){ctx.strokeStyle=`rgba(190,110,255,${.5+Math.sin(t/150)*.3})`;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(X,Y-10,14,15,0,0,Math.PI*2);ctx.stroke()}}else Sprites.draw(ctx,type,'front',X,Y+1+bob,1,{stage:st})}});
  }
  // 동료 & 주인공
  const pt=pl.t;
@@ -265,7 +276,7 @@ function drawField(t){
  // 목표 표시
  const goal=currentGoal();if(goal){const bob=Math.sin(t/180)*2;const X=goal.x*T+8,Y=goal.y*T-(goal.kind==='gate'?26:goal.kind==='mob'&&goal.id===2?22:6)+bob;ctx.fillStyle='#2a1a0a';ctx.fillRect(X-4,Y-6,9,5);ctx.fillRect(X-2,Y-1,5,2);ctx.fillStyle='#ffd75e';ctx.fillRect(X-3,Y-5,7,3);ctx.fillRect(X-1,Y-2,3,2)}
 }
-function currentGoal(){if(S.finished)return null;if(!S.talked)return E.npc;const m=E.mobs.find(m=>m.id<2&&!S.kills.includes(m.id));if(m)return m;if(!S.shrine)return E.stele;if(!S.kills.includes(2))return E.mobs[2];return E.gate}
+function currentGoal(){if(S.finished)return null;if(!S.talked)return E.npc;const m=E.mobs.find(m=>m.id<2&&!S.kills.includes(m.id));if(m)return m;if(!S.shrine)return E.stele;if(!S.trial)return E.trial;if(!S.kills.includes(2))return E.mobs[2];return E.gate}
 function drawWalker(key,dir,X,Y,step){
  const pose=dir==='up'?'back':dir==='down'?'front':'side';const frame=step%2;
  Sprites.draw(ctx,key,pose,X,Y+1-(step?frame:0),1,{frame,flip:dir==='right'});
@@ -483,6 +494,10 @@ function guard(t){
   if(bui.hidden){bui.hidden=false;$('#questbox').hidden=true}
   if(!B.anim&&!choiceAct){B.stuck=B.stuck||t;if(t-B.stuck>1200){B.stuck=0;recoverBattle()}}else B.stuck=0;
  }
+ if(mode==='trial'&&!TR&&!trans){mode='field';$('#trialui').hidden=true;$('#questbox').hidden=false}
+ if(mode!=='trial'&&TR&&!trans){TR=null;$('#trialui').hidden=true}
+ if(mode!=='trial'&&!TR&&!$('#trialui').hidden)$('#trialui').hidden=true;
+ if(TR&&TR.menu&&$('#trialui').hidden)$('#trialui').hidden=false;
  if(mode==='field'&&pl.t>=1&&!walkable(pl.x,pl.y,true)){pl.x=4;pl.y=13;pl.fx=4;pl.fy=13}
 }
 function recoverBattle(){
@@ -500,10 +515,12 @@ function frame(t){
   if(mode==='field'||mode==='dialog'){for(const m of E.mobs)if(m.t<1)m.t=Math.min(1,m.t+dt/260)}
   if(mode==='dialog'){updateDialog();if(pl.t<1)pl.t=Math.min(1,pl.t+dt/STEP_MS)}
   if(mode==='battle'&&B)updateBattle(t);
+  if(mode==='trial'&&TR&&!trans&&!$('#modal').open)trialUpdate(dt/1000);
   ctx.save();
   try{
    if(shake>0){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.85;if(shake<.4)shake=0}
-   if(mode==='battle'&&B&&$('#battleui').hidden===false)drawBattle(t);
+   if(mode==='trial'&&TR&&TR.shown)drawTrial(t);
+   else if(mode==='battle'&&B&&$('#battleui').hidden===false)drawBattle(t);
    else if(E)drawField(t);
    drawFloaters(t);
   }finally{ctx.restore()}
@@ -516,6 +533,7 @@ function act(){
  if($('#modal').open)return;
  if(mode==='dialog'){dialogAdvance();return}
  if(mode==='battle'){battleKey(' ');return}
+ if(mode==='trial'){if(!trans||(TR&&TR.menu))trialKey(' ');return}
  if(mode!=='field'||trans)return;
  const [dx,dy]=DIRS[pl.dir];const e=entAt(pl.x+dx,pl.y+dy)||[[0,1],[1,0],[0,-1],[-1,0]].map(([a,b])=>entAt(pl.x+a,pl.y+b)).find(Boolean);
  if(e)interact(e);else log('주변에 조사할 것이 없다.');
@@ -526,6 +544,7 @@ addEventListener('keydown',ev=>{
  const k=ev.key;
  // Enter/Space가 포커스된 버튼까지 눌러 두 번 처리되는 것을 막는다
  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Enter'].includes(k))ev.preventDefault();
+ if(mode==='trial'){if(trans&&!(TR&&TR.menu))return;if(/^(Arrow(Up|Down|Left|Right)|[wasdWASD])$/.test(k))keys[k]=true;if(!ev.repeat)trialKey(k);return}
  if(mode==='battle'){if(!ev.repeat)battleKey(k);return}
  if(k===' '||k==='Enter'){if(!ev.repeat)act();return}
  if(mode==='dialog')return;
@@ -533,10 +552,16 @@ addEventListener('keydown',ev=>{
  if(k==='j'||k==='J'){journal();return}
  if(k==='m'||k==='M'){toggleSound();return}
  keys[k]=true;
+ const td={ArrowUp:'up',w:'up',W:'up',ArrowDown:'down',s:'down',S:'down',ArrowLeft:'left',a:'left',A:'left',ArrowRight:'right',d:'right',D:'right'}[k];
+ if(td&&!ev.repeat&&mode==='field'){tapDir=td;if(pl.t>=1)pl.dir=td}
 });
 addEventListener('keyup',ev=>{delete keys[ev.key]});
-addEventListener('blur',()=>keys={});
+addEventListener('blur',()=>{keys={};if(TR&&TR.phase==='run'&&mode==='trial')trialPause()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&TR&&TR.phase==='run'&&mode==='trial')trialPause()});
+const trialRelease=()=>{if(TR)TR.touch=0};
+cv.addEventListener('pointerup',trialRelease);cv.addEventListener('pointercancel',trialRelease);cv.addEventListener('pointerleave',trialRelease);
 cv.addEventListener('pointerdown',ev=>{
+ if(mode==='trial'){if(!TR||trans)return;if(TR.menu){return}if(TR.phase!=='run')return;const r=cv.getBoundingClientRect(),fx=(ev.clientX-r.left)/r.width;if(fx<.38)TR.touch=-1;else if(fx>.62)TR.touch=1;else trialJump();try{cv.setPointerCapture(ev.pointerId)}catch{}return}
  if(mode==='dialog'){dialogAdvance();return}
  if(mode!=='field'||trans)return;
  const r=cv.getBoundingClientRect();const x=Math.floor((ev.clientX-r.left)/r.width*W),y=Math.floor((ev.clientY-r.top)/r.height*H);
@@ -547,7 +572,7 @@ cv.addEventListener('pointerdown',ev=>{
 $('#dialog').addEventListener('click',dialogAdvance);
 document.querySelectorAll('[data-move]').forEach(b=>{
  const [dx,dy]=b.dataset.move.split(',').map(Number);const k=dx>0?'ArrowRight':dx<0?'ArrowLeft':dy>0?'ArrowDown':'ArrowUp';
- const down=e=>{e.preventDefault();if(mode==='battle'){battleKey(k);return}keys[k]=true};const up=()=>delete keys[k];
+ const down=e=>{e.preventDefault();if(mode==='battle'){battleKey(k);return}if(mode==='trial'&&TR&&TR.menu){trialKey(k);return}keys[k]=true};const up=()=>delete keys[k];
  b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointerleave',up);b.addEventListener('pointercancel',up);
 });
 $('#abtn').addEventListener('click',act);
@@ -565,27 +590,27 @@ function badges(){return stages.map((s,i)=>`<span class="${i<S.stage||(i===S.sta
 function journal(){
  if(S.finished){ending();return}
  const learned=stages.slice(0,S.stage+(S.shrine?1:0)).map((s,i)=>`<p><b style="color:#ffd75e">${s.name} · ${STELE_TITLE[i]}</b><br>${s.qs[2][3]}</p>`).join('')||'<p class="muted">비석을 조사하면 배운 내용이 기록됩니다.</p>';
- openModal(`<h2>바람의 수련 수첩</h2><p>현재: 제${S.stage+1}장 ${stages[S.stage].name}<br>레벨 ${level()} · 경험치 ${S.xp} · 물리친 요괴 ${S.defeated}마리<br>정답 필살기 ${S.right}회 · 오답 ${S.wrong}회</p><div class="badgegrid">${badges()}</div><h2 style="font-size:17px">비석에서 배운 것</h2>${learned}`);
+ openModal(`<h2>바람의 수련 수첩</h2><p>현재: 제${S.stage+1}장 ${stages[S.stage].name}<br>레벨 ${level()} · 경험치 ${S.xp} · 물리친 요괴 ${S.defeated}마리<br>정답 필살기 ${S.right}회 · 오답 ${S.wrong}회</p><div class="badgegrid">${badges()}</div><h2 style="font-size:17px">외줄 수련 기록</h2><p>${TRIAL.names.map((n,i)=>{const r=(S.trialRec||[])[i];return `${n}: ${r?(r.helped?'도사님 도움으로 통과':`통과 · 구슬 ${r.orbs}개 · 떨어짐 ${r.lost}번`):(i===S.stage&&S.trial?'통과':'—')}`}).join('<br>')}</p><h2 style="font-size:17px">비석에서 배운 것</h2>${learned}`);
 }
 $('#journal').onclick=journal;
 function toggleSound(){S.sound=!S.sound;Music.setEnabled(S.sound);save();hud();if(S.sound)Music.sfx('ok')}
 $('#sound').onclick=toggleSound;
-$('#help').onclick=()=>openModal(`<h2>취풍 무협전 안내</h2><p><b>이동</b> 방향키 / WASD · 마우스·터치로 바닥 누르기<br><b>대화·조사</b> Space / Enter (대상을 바라보고)<br><b>전투</b> ↑↓←→ 선택, Space/Enter 결정, 숫자키 1~3 바로 선택<br><b>기타</b> 1 회복약 · J 수련 수첩 · M 소리 켜기/끄기</p><p>요괴에게 닿으면 사이드뷰 전투가 시작됩니다. <b>「필살기」</b>를 고르면 문제가 나오고, 정답을 고르면 동료의 필살기가 터져 100 피해를 줍니다. 떠돌이 요괴는 1번, 보스는 3번 맞혀야 쓰러집니다.</p><p>틀리면 요괴가 반격해 동료 한 명의 체력이 20 줄고 해설이 나옵니다. 해설을 읽고 다시 도전하세요. 모두 쓰러져도 출발 지점에서 회복해 다시 도전할 수 있어요.</p><p class="muted">진행 순서: NPC와 대화 → 떠돌이 요괴 2마리 → 강 건너 남쪽 비석 → 보스 → 북동쪽 성문. 노란 화살표가 다음 목표를 가리킵니다. 2장에서는 보미, 3장에서는 곰돌이 동료가 됩니다.</p>`);
+$('#help').onclick=()=>openModal(`<h2>취풍 무협전 안내</h2><p><b>이동</b> 방향키 / WASD · 마우스·터치로 바닥 누르기<br><b>대화·조사</b> Space / Enter (대상을 바라보고)<br><b>전투</b> ↑↓←→ 선택, Space/Enter 결정, 숫자키 1~3 바로 선택<br><b>기타</b> 1 회복약 · J 수련 수첩 · M 소리 켜기/끄기</p><p>요괴에게 닿으면 사이드뷰 전투가 시작됩니다. <b>「필살기」</b>를 고르면 문제가 나오고, 정답을 고르면 동료의 필살기가 터져 100 피해를 줍니다. 떠돌이 요괴는 1번, 보스는 3번 맞혀야 쓰러집니다.</p><p><b>외줄 수련</b> 장마다 보스 결계 옆 깃발 수련터에서 장대 위를 건넙니다. ←→로 균형(기울어진 반대쪽!), Space 점프, ↑↓ 속도, Esc 일시정지. 굴러오는 통·끊어진 장대·도깨비불·돌풍·안개를 넘어 끝까지 가면 결계가 풀립니다. 실패할수록 쉬워지고, 두 번 실패하면 도움을 받아 통과할 수도 있어요.</p><p>틀리면 요괴가 반격해 동료 한 명의 체력이 20 줄고 해설이 나옵니다. 해설을 읽고 다시 도전하세요. 모두 쓰러져도 출발 지점에서 회복해 다시 도전할 수 있어요.</p><p class="muted">진행 순서: NPC와 대화 → 떠돌이 요괴 2마리 → 강 건너 남쪽 비석 → 외줄 수련 → 보스 → 북동쪽 성문. 노란 화살표가 다음 목표를 가리킵니다. 2장에서는 보미, 3장에서는 곰돌이 동료가 됩니다.</p>`);
 $('#video').onclick=()=>openModal('<h2>학습 영상 · 웰컴 투 디지털 월드</h2><iframe src="https://www.youtube-nocookie.com/embed/kB666Wpu-Ls" title="양성평등 교육 영상" allowfullscreen></iframe><p><a href="https://www.youtube.com/watch?v=kB666Wpu-Ls" target="_blank" rel="noopener">YouTube에서 영상 보기 ↗</a></p>');
 $('#reset').onclick=()=>{openModal('<h2>새 원정을 시작할까요?</h2><p>경험치, 동료, 인장, 약속과 진행이 모두 초기화됩니다.</p><button id="keep">기록 유지</button> <button id="new">초기화하고 시작</button>');$('#keep').onclick=closeModal;$('#new').onclick=()=>{
  const snd=S.sound;S=fresh();S.sound=snd;pl.x=S.x;pl.y=S.y;pl.dir='down';try{localStorage.removeItem(KEY)}catch{}
- closeModal();trans=null;choiceAct=null;B=null;dialog=null;floaters=[];
- $('#battleui').hidden=true;$('#questbox').hidden=false;$('#dialog').hidden=true;
+ closeModal();trans=null;choiceAct=null;B=null;TR=null;dialog=null;floaters=[];
+ $('#battleui').hidden=true;$('#trialui').hidden=true;$('#questbox').hidden=false;$('#dialog').hidden=true;
  if($('#splash')){$('#splash').remove()}
  mode='field';loadStage();chapterCard();Music.play('field');save();log('새 원정을 시작했다.','gold');introHint();cv.focus()}};
 function introHint(){setTimeout(()=>{if(mode==='field'&&!S.talked&&S.stage===0&&!dialog&&!B&&!trans&&!$('#modal').open)say([['baram','하아암~ 잘 잤다. …응? 사부님이 길 위에서 손짓하고 계시네.'],['sys','방향키(WASD)로 걸어가서 Space로 말을 걸자. 노란 화살표가 목표야!']])},1600)}
 function ending(){
  Music.play('ending');
- openModal(`<h2>마지막 장 · 평등의 나라를 되찾다</h2><canvas class="endart" id="endart" width="200" height="56"></canvas><p>다섯 고을의 요괴와 불평등 대마왕을 물리쳤다!<br>바람: "공부로 이기는 무공… 생각보다 멋진데요, 사부님?"<br>허허 도사: "허허, 이제야 알았느냐. 진짜 무공은 일상에서 쓰는 거란다."</p><p>이제 <b style="color:#ffd75e">존중 · 보호 · 자유 · 용기 · 연대</b>의 힘을 현실에서도 펼쳐 보자.</p><div class="badgegrid">${stages.map(s=>`<span class="on">${s.power}</span>`).join('')}</div><p class="muted">레벨 ${level()} · 정답 필살기 ${S.right}회 · 오답 ${S.wrong}회 · 물리친 요괴 ${S.defeated}마리</p><label for="pledge">나의 실천 약속</label><textarea id="pledge" maxlength="300" placeholder="친구를 놀리는 말에 동조하지 않고…">${S.pledge.replace(/</g,'&lt;')}</textarea><p class="muted">개인정보는 적지 마세요. 이 브라우저에만 저장됩니다.</p><button id="promise">약속 저장 · 원정 기록 내려받기</button>`);
+ openModal(`<h2>마지막 장 · 평등의 나라를 되찾다</h2><canvas class="endart" id="endart" width="200" height="56"></canvas><p>다섯 고을의 요괴와 불평등 대마왕을 물리쳤다!<br>바람: "공부로 이기는 무공… 생각보다 멋진데요, 사부님?"<br>허허 도사: "허허, 이제야 알았느냐. 진짜 무공은 일상에서 쓰는 거란다."</p><p>이제 <b style="color:#ffd75e">존중 · 보호 · 자유 · 용기 · 연대</b>의 힘을 현실에서도 펼쳐 보자.</p><div class="badgegrid">${stages.map(s=>`<span class="on">${s.power}</span>`).join('')}</div><p class="muted">레벨 ${level()} · 정답 필살기 ${S.right}회 · 오답 ${S.wrong}회 · 물리친 요괴 ${S.defeated}마리 · 외줄 수련 구슬 ${(S.trialRec||[]).reduce((a,r)=>a+(r&&r.orbs||0),0)}개</p><label for="pledge">나의 실천 약속</label><textarea id="pledge" maxlength="300" placeholder="친구를 놀리는 말에 동조하지 않고…">${S.pledge.replace(/</g,'&lt;')}</textarea><p class="muted">개인정보는 적지 마세요. 이 브라우저에만 저장됩니다.</p><button id="promise">약속 저장 · 원정 기록 내려받기</button>`);
  const c=$('#endart'),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.fillStyle='#1a2a6a';g.fillRect(0,0,200,56);g.fillStyle='#ffd75e';for(let i=0;i<30;i++)g.fillRect((i*53)%200,(i*29)%30,1,1);
  g.fillStyle='#3a6a3a';g.fillRect(0,46,200,10);
  [['master',40],['baram',80],['bomi',112],['gomdol',144]].forEach(([k,x])=>{const img=Sprites.get(k,'front',0,0);g.drawImage(img,x-img.width,48-img.height*2,img.width*2,img.height*2)});
- $('#promise').onclick=()=>{S.pledge=$('#pledge').value.trim().slice(0,300);save();const url=URL.createObjectURL(new Blob([`평등의 나라 · 취풍 무협전 원정 기록\n완료: 5개 고을 / 수호 인장 5개\n레벨 ${level()} · 경험치 ${S.xp}\n정답 필살기 ${S.right}회 · 오답 ${S.wrong}회 · 물리친 요괴 ${S.defeated}마리\n배운 힘: 존중 · 보호 · 자유 · 용기 · 연대\n나의 약속: ${S.pledge}`],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='평등의나라_원정기록.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('#promise').textContent='약속 저장 완료 · 다시 내려받기'};
+ $('#promise').onclick=()=>{S.pledge=$('#pledge').value.trim().slice(0,300);save();const url=URL.createObjectURL(new Blob([`평등의 나라 · 취풍 무협전 원정 기록\n완료: 5개 고을 / 수호 인장 5개\n레벨 ${level()} · 경험치 ${S.xp}\n정답 필살기 ${S.right}회 · 오답 ${S.wrong}회 · 물리친 요괴 ${S.defeated}마리\n외줄 수련: ${TRIAL.names.map((n,i)=>{const r=(S.trialRec||[])[i];return n+(r?(r.helped?'(도움)':`(구슬 ${r.orbs})`):'')}).join(', ')}\n배운 힘: 존중 · 보호 · 자유 · 용기 · 연대\n나의 약속: ${S.pledge}`],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='평등의나라_원정기록.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('#promise').textContent='약속 저장 완료 · 다시 내려받기'};
 }
 
 // ---------- 타이틀 ----------
@@ -598,6 +623,7 @@ $('#play').onclick=()=>{
 };
 document.fonts&&document.fonts.ready.then(titleArt);titleArt();
 // 저장된 체력이 모두 0이거나 비정상이면 회복
+if(typeof S.trial!=='boolean')S.trial=S.kills.includes(2);S.trialFails=Math.max(0,Math.min(9,Number(S.trialFails)||0));if(!Array.isArray(S.trialRec))S.trialRec=[];
 S.hp=S.hp.map((v,i)=>Math.max(0,Math.min(maxHp(i),Number.isFinite(+v)?+v:maxHp(i))));
 if(!partyIdx().some(i=>S.hp[i]>0))healAll();
 // 마우스로 누른 버튼에 포커스가 남아 키 입력을 가로채지 않도록
@@ -605,4 +631,4 @@ document.querySelectorAll('nav button,.hotkeys button').forEach(b=>b.addEventLis
 grid=makeMap(S.stage);mapImg=renderMap(S.stage);
 loadStage();hud();
 requestAnimationFrame(frame);
-window.__game={get dialog(){return dialog},get choiceAct(){return choiceAct},get trans(){return trans},get S(){return S},get mode(){return mode},get B(){return B},get E(){return E},pl,interact,startBattle,bAnswer,walkable,bfs,makeMap,get grid(){return grid},loadStage};
+window.__game={get TR(){return TR},startTrial,get keys(){return keys},get dialog(){return dialog},get choiceAct(){return choiceAct},get trans(){return trans},get S(){return S},get mode(){return mode},get B(){return B},get E(){return E},pl,interact,startBattle,bAnswer,walkable,bfs,makeMap,get grid(){return grid},loadStage};

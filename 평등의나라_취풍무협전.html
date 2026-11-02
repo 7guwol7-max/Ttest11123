@@ -67,6 +67,13 @@ nav button:hover,.hotkeys button:hover,dialog button:hover{filter:brightness(1.2
 .pm .bar i{position:absolute;inset:0;background:linear-gradient(90deg,#3fd06a,#a8f07a);transform-origin:left}
 .pm.low .bar i{background:linear-gradient(90deg,#e24a3b,#ff9a6b)}
 .pm span{font-size:.85em;color:var(--muted)}
+/* 외줄 수련 패널 */
+.trialui{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#0007;z-index:4}
+.tpanel{width:min(76cqw,600px);padding:2cqw 2.6cqw;font-size:clamp(11px,1.95cqw,18px);line-height:1.6}
+.tpanel h3{margin:0 0 .4em;color:var(--gold);font-weight:normal;font-size:1.25em}
+.tpanel p{margin:.45em 0}
+.tpanel b{color:var(--gold);font-weight:normal}
+.tpanel .keys{color:#ffe9a8}
 /* 챕터 카드 */
 .chapter{position:absolute;inset:0;background:#000d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5cqw;animation:fade 2.6s ease forwards;pointer-events:none;z-index:5}
 .chapter small{color:var(--muted);font-size:clamp(12px,2.2cqw,20px);letter-spacing:.3em}
@@ -169,6 +176,9 @@ textarea{width:100%;min-height:80px;font:inherit;background:#0c1550;color:#fff;b
       </div>
     </div>
 
+    <!-- 외줄 수련 패널 -->
+    <div class="trialui" id="trialui" hidden><div class="tpanel win" id="tpanel"></div></div>
+
     <!-- 타이틀 -->
     <div id="splash">
       <div class="splashinner">
@@ -254,6 +264,8 @@ const SCRIPTS=[
     ['master','요괴는 칼로는 안 베어진다. 올바른 생각, 즉 「정답」을 외쳐야 필살기가 터지지!'],
     ['baram','공부를… 해야 이긴다고요?! 세상에 그런 무공이 어딨어요!'],
     ['master','여기 있다. 허허. 떠돌이 요괴 두 마리를 혼내 주고, 강 건너 남쪽 비석을 살펴보거라.'],
+    ['master','그리고 보스 앞 깃발 수련터에서 「외줄 수련」을 통과해야 결계가 풀린다. 장대 위에서 넘어지지 말거라!'],
+    ['baram','장대 위를 걸으라고요?! 사부님, 저 낮잠 자다가 침대에서도 떨어지는데요…'],
     ['sys','임무를 받았다! 요괴에게 다가가면 전투가 시작된다.']
    ],
    again:[['master','허허, 지쳤느냐? 사부표 특제 만두를 먹거라! (일행 체력 모두 회복)']]
@@ -417,6 +429,11 @@ const SONGS={
   {wave:'sawtooth',vol:.035,seq:parse(bassLine(['A','A','F','F','C','C','G','A']))},
   {wave:'noise',vol:.035,seq:[].concat(...Array(32).fill(parse('C4:1 C4:1')))}
  ]},
+ trial:{bpm:176,tracks:[
+  {wave:'square',vol:.05,seq:parse('B4:1 E5:1 G5:1 E5:1 A5:1 G5:1 E5:2 D5:1 E5:1 G5:2 E5:2 B4:2 B4:1 E5:1 G5:1 A5:1 B5:2 A5:2 G5:1 A5:1 G5:1 E5:1 D5:4 E5:1 G5:1 A5:1 B5:1 D6:2 B5:2 A5:1 B5:1 A5:1 G5:1 E5:2 G5:2 A5:2 G5:1 E5:1 D5:2 B4:2 E5:6 -:2')},
+  {wave:'triangle',vol:.1,seq:parse(bassLine(['E','E','C','D','E','E','C','B']))},
+  {wave:'noise',vol:.035,seq:[].concat(...Array(16).fill(parse('C4:1 C4:1 -:1 C4:1')))}
+ ]},
  victory:{bpm:140,once:true,tracks:[
   {wave:'square',vol:.06,seq:parse('E5:1 G5:1 A5:1 C6:3 A5:1 C6:2 D6:2 E6:6 -:2')},
   {wave:'triangle',vol:.1,seq:parse('A3:3 E3:3 A3:2 C4:4 G3:4 A3:6 -:2')}
@@ -480,6 +497,8 @@ function sfx(kind){
   heal:[['triangle',72,0,.08,.1],['triangle',76,.07,.08,.1],['triangle',79,.14,.08,.1],['triangle',84,.21,.16,.1]],
   chime:[['triangle',84,0,.2,.1],['triangle',88,.12,.2,.1],['triangle',91,.24,.4,.1]],
   door:[['square',60,0,.06,.05],['square',67,.07,.06,.05],['square',72,.14,.12,.05]],
+  jump:[['square',67,0,.05,.05],['square',74,.05,.05,.05],['square',79,.1,.06,.04]],
+  splash:[['noise',60,0,.18,.12],['square',45,0,.15,.05],['triangle',72,.12,.08,.06],['triangle',79,.2,.08,.05]],
   encounter:[['square',72,0,.05,.05],['square',76,.05,.05,.05],['square',79,.1,.05,.05],['square',84,.15,.05,.05],['noise',60,.2,.1,.08]],
   bump:[['square',40,0,.04,.04]]
  }[kind]||[];
@@ -488,6 +507,305 @@ function sfx(kind){
 return {play,stop,sfx,setEnabled,get current(){return cur}};
 })();
 </script>
+<script>// 외줄 수련 — 장대 위에서 방향키로 균형을 잡으며 장애물을 넘는 미니게임 (장마다 1회, 보스 결계를 푸는 시험)
+const TRIAL={
+ names:['존중의 장대','비밀의 외나무','자유의 꽃바람 다리','용기의 안개 줄','연대의 마지막 장대'],
+ desc:[
+  '굴러오는 「놀림 통」은 <b>점프</b>로 넘고, 끊어진 곳은 뛰어넘어라! 기울어지면 <b>반대쪽 방향키</b>로 버틴다.',
+  '정보를 노리는 <b>도깨비불</b>이 좌우로 날아다닌다. 부딪히면 몸이 휘청! <b>↑↓로 속도</b>를 조절해 틈을 노려라.',
+  '고정관념 <b>돌풍</b>이 몸을 한쪽으로 밀어낸다. 화살표가 가리키는 <b>반대쪽</b>으로 꾹 버텨라!',
+  '침묵의 <b>안개</b> 속에서는 앞이 잘 안 보인다. 멈추지 말고, 동료들의 응원을 믿어라!',
+  '지금까지의 모든 시련이 한꺼번에 몰려온다! 존중·보호·자유·용기를 모아 <b>연대</b>의 힘으로 건너라.'
+ ],
+ good:[['고마워','괜찮아?','멈춰!','존중해','함께해'],['비밀번호','지켜 줘','신고하기','안전','확인하기'],['좋아해','자유','내 취향','울어도 돼','다 같이'],['도와주세요','용기','말해도 돼','함께 가자','괜찮아'],['존중','보호','자유','용기','연대']],
+ bad:[['놀림','조롱','비웃음'],['유포','캐묻기','낚시'],['편견','고정관념','틀'],['협박','침묵','두려움'],['차별','혐오','불평등']],
+ len:[2100,2400,2700,3000,3400],
+ speed:[78,84,90,94,100],
+ drift:[1.15,1.3,1.45,1.55,1.6],
+ kinds:[2,3,4,4,4]
+};
+const AIR=0.62,PY=232,PX=240;
+let TR=null;
+const pick=a=>a[(Math.random()*a.length)|0];
+const rnd=(a,b)=>a+Math.random()*(b-a);
+function trialAssist(){const f=S.trialFails||0;return {drift:Math.max(.45,1-.18*f),speed:Math.max(.78,1-.06*f),hearts:3+Math.min(2,f)}}
+function buildCourse(st,as){
+ const L=TRIAL.len[st],ev=[],spd=TRIAL.speed[st]*as.speed;
+ const maxGap=Math.min(30+st*4,spd*AIR*.6);
+ const kinds=['gap','roller','swing','gust'].slice(0,TRIAL.kinds[st]);
+ let d=360,i=0;
+ while(d<L-300){
+  const k=i<kinds.length?kinds[i]:pick(kinds);i++;
+  if(k==='gap'){const len=rnd(maxGap*.75,maxGap);ev.push({type:'gap',d,len});d+=len}
+  else if(k==='roller'){const v=38+st*7;ev.push({type:'roller',d,v,word:pick(TRIAL.bad[st]),r:0});if(st>=4&&Math.random()<.45)ev.push({type:'roller',d:d+46,v,word:pick(TRIAL.bad[st]),r:0})}
+  else if(k==='swing'){ev.push({type:'swing',d,amp:rnd(95,128),w:rnd(1.8,2.3)+st*.12,ph:rnd(0,6.28),x:PX})}
+  else if(k==='gust'){const len=rnd(170,230);ev.push({type:'gust',d,len,dir:Math.random()<.5?-1:1,pow:Math.min(3.3,2.4+st*.3)});d+=len*(st>=3?.45:1)}
+  const sp=rnd(150,205)-st*8;
+  if(Math.random()<.7)ev.push({type:'orb',d:d+sp/2,word:pick(TRIAL.good[st])});
+  d+=sp;
+ }
+ const fog=st>=3?[{d0:L*.28,d1:L*(st===3?.78:.55)}]:[];
+ if(st===4)fog.push({d0:L*.72,d1:L*.9});
+ return {L,ev,fog};
+}
+function initTrial(){
+ const as=trialAssist(),st=S.stage;
+ const t={stage:st,as,phase:'intro',time:0,count:3,hearts:as.hearts,maxHearts:as.hearts,orbs:0,got:[],lost:0,
+  speed:TRIAL.speed[st]*as.speed,drift:TRIAL.drift[st]*as.drift,p1:rnd(0,6),p2:rnd(0,6),p3:rnd(0,6),
+  P:{d:0,lean:0,lv:0,air:0,inv:0,falling:0,fallDir:1},menu:null,msg:null,touch:0,shown:false,done:false,panelAt:0};
+ t.c=buildCourse(st,as);t.gusts=t.c.ev.filter(e=>e.type==='gust');
+ return t;
+}
+function startTrial(){
+ if(mode!=='field'||trans||B||TR)return;
+ TR=initTrial();mode='trial';keys={};path=[];
+ Music.sfx('encounter');
+ trans={t0:performance.now(),dur:600,kind:'swirl',mid:()=>{if(!TR)return;TR.shown=true;$('#questbox').hidden=true;Music.play('trial');trialIntroPanel()}};
+}
+// ----- 패널(메뉴) -----
+function trialPanel(html,buttons){
+ if(!TR)return;
+ const el=$('#tpanel');
+ el.innerHTML=html+buttons.map((b,i)=>`<button class="choice" data-i="${i}"><kbd>${i+1}</kbd>${b[0]}</button>`).join('');
+ $('#trialui').hidden=false;
+ TR.menu={sel:0,fns:buttons.map(b=>b[1])};
+ el.querySelectorAll('.choice').forEach((btn,i)=>{btn.onclick=()=>trialChoose(i);btn.onmouseenter=()=>{if(TR&&TR.menu){TR.menu.sel=i;trialMark()}}});
+ trialMark();
+}
+function trialChoose(i){
+ if(!TR||!TR.menu)return;const fn=TR.menu.fns[i];if(!fn)return;
+ TR.menu=null;$('#trialui').hidden=true;Music.sfx('select');fn();
+}
+function trialMark(){if(!TR||!TR.menu)return;$('#tpanel').querySelectorAll('.choice').forEach((b,i)=>b.classList.toggle('sel',i===TR.menu.sel))}
+function trialKey(k){
+ if(!TR)return;
+ if(k==='m'||k==='M'){toggleSound();return}
+ if(TR.menu){const n=TR.menu.fns.length;
+  if(k==='ArrowDown'||k==='s'||k==='S'||k==='ArrowRight'||k==='d'||k==='D'){TR.menu.sel=(TR.menu.sel+1)%n;trialMark();Music.sfx('select')}
+  else if(k==='ArrowUp'||k==='w'||k==='W'||k==='ArrowLeft'||k==='a'||k==='A'){TR.menu.sel=(TR.menu.sel-1+n)%n;trialMark();Music.sfx('select')}
+  else if(k===' '||k==='Enter')trialChoose(TR.menu.sel);
+  else if(/^[1-9]$/.test(k)&&+k<=n)trialChoose(+k-1);
+  return;
+ }
+ if(TR.phase==='run'){if(k===' '||k==='Enter'||k==='z'||k==='Z')trialJump();else if(k==='Escape'||k==='p'||k==='P')trialPause()}
+}
+function trialIntroPanel(){
+ const st=TR.stage;
+ trialPanel(`<h3>외줄 수련 · ${TRIAL.names[st]}</h3><p>${TRIAL.desc[st]}</p>
+  <p class="keys">← → 균형 잡기 (기울어진 <b>반대쪽</b>을 누르기!)<br>Space 점프 · ↑ 빠르게 · ↓ 천천히 · Esc 일시정지</p>
+  <p class="muted">터치: 화면 왼쪽·오른쪽을 누르고 있기 · 가운데 또는 A 버튼 점프<br>목숨 ${'♥'.repeat(TR.hearts)}${S.trialFails?` · 도사님 도움: 바람이 약해지고 목숨이 늘었다 (${S.trialFails}번째 재도전)`:''}</p>`,
+  [['수련 시작!',()=>{TR.phase='count';TR.count=3}],['나중에 하기',()=>exitTrial(false)]]);
+}
+function trialPause(){
+ if(!TR||TR.phase!=='run')return;
+ TR.phase='pause';keys={};TR.touch=0;
+ trialPanel('<h3>일시정지</h3><p>숨을 고르자… 준비되면 다시 출발!</p>',[['계속하기',()=>{TR.phase='count';TR.count=1.5}],['포기하고 나가기',()=>{S.trialFails=(S.trialFails||0)+1;save();exitTrial(false)}]]);
+}
+function trialJump(){const P=TR.P;if(TR.phase==='run'&&P.air<=0&&P.falling<=0){P.air=AIR;Music.sfx('jump')}}
+function trialMsg(text,color='#fff'){TR.msg={text,color,t:TR.time}}
+// ----- 진행 -----
+function trialUpdate(dt){
+ const T=TR;T.time+=dt;
+ if(!T.shown)return;
+ if((T.phase==='intro'||T.phase==='pause')&&!T.menu){T.phase==='intro'?trialIntroPanel():(T.phase='run',trialPause());return}
+ if(T.phase==='count'){T.count-=dt;if(T.count<=0){T.phase='run';Music.sfx('ok');trialMsg('출발!','#ffd75e')}return}
+ if(T.phase==='clear'||T.phase==='fail'){if(!T.menu&&T.time>=T.panelAt){T.phase==='clear'?clearPanel():failPanel()}return}
+ if(T.phase!=='run')return;
+ const P=T.P;
+ if(P.falling>0){P.falling-=dt;if(P.falling<=0)afterFall();return}
+ const up=keys.ArrowUp||keys.w||keys.W,dn=keys.ArrowDown||keys.s||keys.S;
+ // 공중에서는 감속하지 않음(느리게 누른 채 점프해도 틈을 넘을 수 있게)
+ const v=T.speed*(up?1.45:(dn&&P.air<=0)?.5:1);
+ P.d+=v*dt;
+ const Lk=keys.ArrowLeft||keys.a||keys.A?1:0,Rk=keys.ArrowRight||keys.d||keys.D?1:0;
+ const input=Math.max(-1,Math.min(1,(Rk-Lk)+T.touch));
+ const tt=T.time;
+ const drift=T.drift*(Math.sin(tt*1.3+T.p1)*.6+Math.sin(tt*2.7+T.p2)*.35+Math.sin(tt*.5+T.p3)*.55);
+ let gust=0;for(const g of T.gusts)if(P.d>=g.d&&P.d<=g.d+g.len)gust+=g.dir*g.pow*T.as.drift;
+ const acc=drift+gust+input*4.4+P.lean*1.25-P.lv*2.4;
+ P.lv+=acc*dt;P.lean+=P.lv*dt*(P.air>0?.6:1);
+ if(P.air>0)P.air=Math.max(0,P.air-dt);
+ if(P.inv>0)P.inv-=dt;
+ if(Math.abs(P.lean)>=1){fall('balance');return}
+ for(const e of T.c.ev){
+  if(e.type==='gap'){if(P.air<=0&&P.d>e.d+3&&P.d<e.d+e.len-3){fall('gap');return}}
+  else if(e.type==='roller'&&!e.gone){
+   if(e.d-P.d<280){e.d-=e.v*dt;e.r+=e.v*dt/9}
+   if(e.d<P.d-60)e.gone=true;
+   else if(P.air<=0&&P.inv<=0&&Math.abs(e.d-P.d)<12){e.gone=true;fall('roller',e.word);return}
+  }
+  else if(e.type==='swing'){
+   e.x=PX+Math.sin(tt*e.w+e.ph)*e.amp;
+   if(!e.hit&&P.inv<=0&&Math.abs(e.d-P.d)<11&&Math.abs(e.x-(PX+P.lean*7))<16){e.hit=true;const dir=Math.cos(tt*e.w+e.ph)>=0?1:-1;P.lv+=dir*2.6;Music.sfx('hurt');shake=4;trialMsg('퍽! 도깨비불에 휘청!','#ff9a6b')}
+  }
+  else if(e.type==='orb'&&!e.got&&Math.abs(e.d-P.d)<14){e.got=true;T.orbs++;T.got.push(e.word);Music.sfx('chime');floaters.push({x:PX+22,y:PY-30,text:'+'+e.word,color:'#ffd75e',t0:performance.now()})}
+ }
+ if(P.d>=T.c.L){T.phase='clear';T.panelAt=T.time+1.1;trialClear()}
+}
+function fall(reason,word){
+ const T=TR,P=T.P;P.falling=.9;P.fallDir=Math.sign(P.lean)||1;T.hearts--;T.lost++;Music.sfx('splash');shake=6;
+ trialMsg(reason==='balance'?'균형을 잃었다!':reason==='gap'?'끊어진 곳에 빠졌다!':`「${word}」에 부딪혔다!`,'#ff6b5b');
+}
+function afterFall(){
+ const T=TR,P=T.P;
+ if(T.hearts<=0){T.phase='fail';T.panelAt=T.time+.4;S.trialFails=(S.trialFails||0)+1;save();Music.sfx('wrong');return}
+ P.d=Math.max(0,P.d-50);
+ for(let k=0;k<3;k++)for(const e of T.c.ev)if(e.type==='gap'&&P.d>e.d-24&&P.d<e.d+e.len+4)P.d=Math.max(0,e.d-30);
+ for(const e of T.c.ev)if(e.type==='roller'&&!e.gone&&e.d>P.d-20&&e.d<P.d+170)e.d=P.d+300;
+ P.lean=0;P.lv=0;P.air=0;P.inv=1.8;
+ trialMsg('다시 일어섰다! ♥'+T.hearts,'#7be38a');
+}
+function trialClear(){
+ const T=TR,perfect=T.lost===0,xp=100+T.orbs*10,before=level();
+ S.trial=true;S.xp+=xp;if(perfect)S.potions++;
+ S.trialRec=Array.isArray(S.trialRec)?S.trialRec:[];
+ S.trialRec[T.stage]={orbs:T.orbs,lost:T.lost,tries:(S.trialFails||0)+1};
+ S.trialFails=0;T.reward={xp,perfect,up:level()>before};if(T.reward.up)healAll();
+ save();hud();Music.play('victory',null);trialMsg('수련 완주!','#ffd75e');
+}
+function clearPanel(){
+ const T=TR,r=T.reward;
+ trialPanel(`<h3>수련 성공! · ${TRIAL.names[T.stage]}</h3><p>결계가 완전히 풀렸다. 이제 보스에게 도전할 수 있다!</p>
+  <p>모은 구슬 ${T.orbs}개 · 경험치 +${r.xp}${r.perfect?' · <b>한 번도 안 떨어짐! 회복약 +1</b>':` · 떨어진 횟수 ${T.lost}`}${r.up?` · 레벨 업! Lv.${level()}`:''}</p>
+  ${T.got.length?`<p class="keys">모은 말: ${T.got.join(' · ')}</p>`:''}`,[['보스에게 가자!',()=>exitTrial(true)]]);
+}
+function failPanel(){
+ const f=S.trialFails||0;
+ const btns=[['다시 도전',()=>retryTrial()],['잠시 쉬기 (필드로)',()=>exitTrial(false)]];
+ if(f>=2)btns.push(['도사님 도움으로 통과하기',()=>{S.trial=true;S.trialRec=Array.isArray(S.trialRec)?S.trialRec:[];S.trialRec[TR.stage]={orbs:0,lost:TR.lost,tries:f,helped:true};S.trialFails=0;save();exitTrial(true)}]);
+ trialPanel(`<h3>수련 실패…</h3><p>${pick(['괜찮아, 넘어져도 다시 일어나면 돼!','허허, 균형은 연습할수록 좋아지는 법이지!','혼자 힘들면 도움을 청해도 된단다.'])}</p><p class="muted">다시 도전할수록 바람이 약해지고 목숨이 늘어납니다.${f>=2?' 너무 어렵다면 도사님의 도움을 받아 통과할 수도 있어요.':''}</p>`,btns);
+}
+function retryTrial(){TR=initTrial();TR.shown=true;TR.phase='count';TR.count=2.5;keys={};Music.play('trial')}
+function exitTrial(cleared){
+ if(!TR)return;TR.phase='exit';
+ trans={t0:performance.now(),dur:600,kind:'fade',mid:()=>{
+  TR=null;$('#trialui').hidden=true;$('#questbox').hidden=false;mode='field';keys={};cooldown=performance.now()+800;
+  Music.play('field');hud();cv.focus();
+  if(cleared){log(`외줄 수련 통과! ${ENEMY_NAMES[S.stage][2]}의 결계가 풀렸다.`,'gold');say([['sys',`결계가 완전히 풀렸다! 이제 ${ENEMY_NAMES[S.stage][2]}에게 도전하자.`]])}
+  else log('외줄 수련터에서 물러났다. 준비되면 다시 도전하자.');
+ }};
+}
+// ----- 그리기 -----
+function ttxt(s,x,y,size,color,align='center'){ctx.font=size+'px NeoDunggeunmo, monospace';ctx.textAlign=align;ctx.lineWidth=3;ctx.strokeStyle='#1a0a05';ctx.strokeText(s,x,y);ctx.fillStyle=color;ctx.fillText(s,x,y)}
+function heart(x,y,full){const c=full?'#ff4a5a':'#4a2a35';ctx.fillStyle='#1a0a05';ctx.fillRect(x-1,y,11,7);ctx.fillRect(x,y-1,4,2);ctx.fillRect(x+5,y-1,4,2);ctx.fillRect(x+1,y+7,7,2);ctx.fillRect(x+3,y+9,3,1);
+ ctx.fillStyle=c;ctx.fillRect(x,y,9,6);ctx.fillRect(x+1,y-0,3,1);ctx.fillRect(x+5,y,3,1);ctx.fillRect(x+1,y+6,7,1);ctx.fillRect(x+2,y+7,5,1);ctx.fillRect(x+3,y+8,3,1);if(full){ctx.fillStyle='#ffb0b8';ctx.fillRect(x+1,y+1,2,2)}}
+function drawAbyss(st,dd,t){
+ const par=dd*.5;
+ const base=['#2f78c8','#123d22','#7aa84a','#2a2238','#2a1a4a'][st];
+ ctx.fillStyle=base;ctx.fillRect(0,0,480,320);
+ const n0=Math.floor((par-(320-PY))/40)-1;
+ for(let n=n0;n<n0+11;n++){
+  const y=PY-(n*40-par);
+  for(let j=0;j<5;j++){
+   const h=hash(n,j,st+90),x=64+h*352;
+   if(st===0){ctx.fillStyle='#5aa0e8';ctx.fillRect(x,y,18,2);ctx.fillRect(x+6,y+2,10,1);if(j===0){ctx.fillStyle='#6a7a8a';ctx.fillRect(x+40,y+12,10,6)}}
+   else if(st===1){ctx.fillStyle=j%2?'#1d5a34':'#2e7a44';ctx.beginPath();ctx.arc(x,y,10+h*8,0,7);ctx.fill()}
+   else if(st===2){ctx.fillStyle=['#ff7aa8','#ffe06a','#ffffff'][j%3];ctx.fillRect(x,y,3,3);ctx.fillRect(x+20,y+18,2,2);ctx.fillStyle='#6a983a';ctx.fillRect(x+9,y+9,8,2)}
+   else if(st===3){ctx.fillStyle='rgba(255,255,255,.10)';const cx=(x+t/40*(j%2?1:-1))%420+30;ctx.fillRect(cx,y,40,6);ctx.fillRect(cx+8,y-4,22,4)}
+   else{const f=.5+Math.sin(t/200+n+j)*.5;ctx.fillStyle=`rgba(255,215,94,${.25+f*.5})`;ctx.fillRect(x,y,3,3);ctx.fillStyle='rgba(154,138,224,.25)';ctx.fillRect(x-20,y+14,30,2)}
+  }
+ }
+ // 깊이감 그라데이션
+ const g=ctx.createLinearGradient(64,0,240,0);g.addColorStop(0,'rgba(0,0,0,.35)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(64,0,176,320);
+ const g2=ctx.createLinearGradient(416,0,240,0);g2.addColorStop(0,'rgba(0,0,0,.35)');g2.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g2;ctx.fillRect(240,0,176,320);
+}
+function drawBanks(st,dd){
+ const th=THEMES[st];
+ for(const side of [0,1]){
+  const x0=side?416:0;
+  ctx.fillStyle=th.grass[0];ctx.fillRect(x0,0,64,320);
+  const n0=Math.floor((dd-(320-PY))/16)-1;
+  for(let n=n0;n<n0+22;n++){
+   const y=PY-(n*16-dd);const h=hash(n,side,st+50);
+   const edge=side?416-((h*6)|0):64+((h*6)|0)-6;
+   ctx.fillStyle='#2a1a10';ctx.fillRect(side?edge-4:edge,y,6,16);
+   ctx.fillStyle=th.grass[1];ctx.fillRect(x0+((h*40)|0),y+4,3,3);
+   if(n%3===0){for(let j=0;j<2;j++){if(hash(n,j+side*2,st+60)<.65)drawTree(ctx,(side?424:6)+j*24,y-8,th,st,n,j)}}
+  }
+ }
+}
+function drawTrial(t){
+ const T=TR,st=T.stage,P=T.P,L=T.c.L;
+ const sy=d=>PY-(d-P.d);
+ drawAbyss(st,P.d,t);
+ // 돌풍 구역
+ for(const g of T.gusts){const y0=sy(g.d+g.len),y1=sy(g.d);if(y1<-10||y0>330)continue;
+  ctx.fillStyle='rgba(255,255,255,.06)';ctx.fillRect(64,y0,352,y1-y0);
+  for(let i=0;i<16;i++){const yy=y0+((i*53)%Math.max(1,(y1-y0)|0));const xx=64+(((t*.22*g.dir+i*67)%352)+352)%352;ctx.fillStyle=st===2?['#ff9ec4','#ffffff'][i%2]:'rgba(255,255,255,.7)';ctx.fillRect(xx,yy,st===2?3:10,st===2?3:1)}
+  const ay=Math.max(y0+10,Math.min(y1-10,PY-60));ttxt(g.dir>0?'▶▶ 돌풍':'돌풍 ◀◀',g.dir>0?110:370,ay,12,'#ffe06a')}
+ drawBanks(st,P.d);
+ // 장대
+ const gaps=T.c.ev.filter(e=>e.type==='gap');
+ const pole=(d0,d1)=>{const ya=sy(d1),yb=sy(d0);if(yb<-4||ya>324)return;ctx.fillStyle='rgba(0,0,0,.28)';ctx.fillRect(PX+8,ya,6,yb-ya);ctx.fillStyle='#5a3a1a';ctx.fillRect(PX-7,ya,14,yb-ya);ctx.fillStyle='#9a6a32';ctx.fillRect(PX-6,ya,12,yb-ya);ctx.fillStyle='#c08a48';ctx.fillRect(PX-5,ya,3,yb-ya);
+  const b0=Math.ceil(d0/48)*48;for(let b=b0;b<d1;b+=48){const y=sy(b);ctx.fillStyle='#e8d8a8';ctx.fillRect(PX-8,y,16,2);ctx.fillStyle='#8a7a5a';ctx.fillRect(PX-8,y+2,16,1)}};
+ let cur=-120;for(const g of gaps){pole(cur,g.d);const ya=sy(g.d),yb=sy(g.d+g.len);ctx.fillStyle='#c08a48';ctx.fillRect(PX-6,ya-3,4,3);ctx.fillRect(PX+2,ya-2,3,2);ctx.fillRect(PX-4,yb,3,3);ctx.fillRect(PX+3,yb,3,2);cur=g.d+g.len}
+ pole(cur,L+140);
+ // 출발·도착 발판
+ const deck=(d0,d1)=>{const ya=sy(d1),yb=sy(d0);if(yb<0||ya>320)return;ctx.fillStyle='#4a2a12';ctx.fillRect(PX-44,ya,88,yb-ya);ctx.fillStyle='#a8743a';for(let y=ya+1;y<yb;y+=6)ctx.fillRect(PX-43,y,86,4)};
+ deck(-120,-6);deck(L+6,L+140);
+ const fy=sy(L+70);if(fy>-40&&fy<360){ctx.fillStyle='#1a0a0a';ctx.fillRect(PX-30,fy-28,4,40);ctx.fillRect(PX+26,fy-28,4,40);ctx.fillStyle='#c8302a';ctx.fillRect(PX-29,fy-27,2,38);ctx.fillRect(PX+27,fy-27,2,38);ctx.fillStyle='#1a1a2a';ctx.fillRect(PX-36,fy-34,72,6);ctx.fillStyle='#ffd75e';ctx.fillRect(PX-14,fy-30,28,6);ttxt('완주',PX,fy-38,12,'#ffd75e')}
+ // 출발점 응원단
+ const cy=sy(-60);if(cy<360){const fans=[['master',PX-30]];if(S.stage>=1)fans.push(['bomi',PX+30]);if(S.stage>=2)fans.push(['gomdol',PX+56]);fans.forEach(([k,x],i)=>Sprites.draw(ctx,k,'front',x,cy+((t/200+i)|0)%2*-2,1.5,{}));if(cy>40&&cy<330)ttxt('힘내라!',PX,cy-34,12,'#fff')}
+ // 장애물·구슬
+ for(const e of T.c.ev){
+  const y=sy(e.d);if(y<-30||y>350)continue;
+  if(e.type==='orb'&&!e.got){const p=Math.sin(t/150+e.d)*1.5;ctx.fillStyle='rgba(255,215,94,.35)';ctx.beginPath();ctx.arc(PX,y-4,9+p,0,7);ctx.fill();ctx.fillStyle='#ffd75e';ctx.beginPath();ctx.arc(PX,y-4,5,0,7);ctx.fill();ctx.fillStyle='#fff8d0';ctx.fillRect(PX-2,y-7,2,2);ttxt(e.word,PX+16,y-1,11,'#fff3b0','left')}
+  else if(e.type==='roller'&&!e.gone){ctx.save();ctx.translate(PX,y-6);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(-9,6,18,3);ctx.fillStyle='#3a1a0a';ctx.beginPath();ctx.arc(0,0,10,0,7);ctx.fill();ctx.fillStyle='#9a4a2a';ctx.beginPath();ctx.arc(0,0,9,0,7);ctx.fill();ctx.rotate(e.r);ctx.fillStyle='#e8c070';ctx.fillRect(-9,-1,18,2);ctx.fillRect(-1,-9,2,18);ctx.restore();ttxt(e.word,PX,y-20,11,'#ff9a8a');
+   if(e.d-P.d<280&&e.d-P.d>40&&((t/120)|0)%2)ttxt('!',PX+18,y-8,16,'#ff4a3a')}
+  else if(e.type==='swing'){ctx.setLineDash([3,5]);ctx.strokeStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.moveTo(PX-e.amp,y-6);ctx.lineTo(PX+e.amp,y-6);ctx.stroke();ctx.setLineDash([]);
+   const x=e.x;ctx.fillStyle='rgba(176,106,255,.35)';ctx.beginPath();ctx.arc(x,y-6,11,0,7);ctx.fill();ctx.fillStyle='#b06aff';ctx.beginPath();ctx.arc(x,y-6,7,0,7);ctx.fill();ctx.fillRect(x-3,y-17,6,6);ctx.fillStyle='#f0d0ff';ctx.fillRect(x-4,y-8,3,3);ctx.fillRect(x+1,y-8,3,3);ctx.fillStyle='#1a0a2a';ctx.fillRect(x-3,y-7,1,2);ctx.fillRect(x+2,y-7,1,2)}
+ }
+ // 주인공
+ const blink=P.inv>0&&((t/80)|0)%2===0;
+ const lift=P.air>0?Math.sin((1-P.air/AIR)*Math.PI)*14:0;
+ const px=PX+P.lean*7;
+ if(P.falling>0){
+  const k=1-P.falling/.9;ctx.save();ctx.globalAlpha=1-k*.6;ctx.translate(px+P.fallDir*k*34,PY+k*10);ctx.rotate(P.fallDir*k*3);ctx.scale(1-k*.7,1-k*.7);Sprites.draw(ctx,'baram','back',0,0,2,{});ctx.restore();
+  if(k>.55){const r=(k-.55)*60;ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(px+P.fallDir*34,PY+12,r,r*.4,0,0,7);ctx.stroke()}
+ } else if(!blink){
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(px,PY,10-lift/3,3,0,0,7);ctx.fill();
+  ctx.save();ctx.translate(px,PY-lift);ctx.rotate(P.lean*.5);
+  const bob=T.phase==='run'&&P.air<=0?((t/140)|0)%2:0;
+  Sprites.draw(ctx,'baram','back',0,-bob,2,{});
+  ctx.rotate(P.lean*.3);ctx.fillStyle='#3a2410';ctx.fillRect(-36,-20,72,4);ctx.fillStyle='#b07a3a';ctx.fillRect(-35,-19,70,2);ctx.fillStyle='#d8382a';ctx.fillRect(-40,-23,6,8);ctx.fillRect(34,-23,6,8);ctx.fillStyle='#ffd75e';ctx.fillRect(-39,-16,4,3);ctx.fillRect(35,-16,4,3);
+  ctx.restore();
+ }
+ // 안개
+ let fog=0;for(const z of T.c.fog){if(P.d>z.d0-80&&P.d<z.d1+80)fog=Math.max(fog,Math.min(1,(P.d-(z.d0-80))/80,(z.d1+80-P.d)/80))}
+ if(fog>0){const g=ctx.createRadialGradient(px,PY-10,36,px,PY-10,130);g.addColorStop(0,'rgba(34,28,52,0)');g.addColorStop(1,`rgba(34,28,52,${.96*fog})`);ctx.fillStyle=g;ctx.fillRect(0,0,480,320);if(fog>.5)ttxt('침묵의 안개…',PX,40,12,'rgba(220,210,255,.8)')}
+ // 안개 속에서도 굴러오는 통은 경고 표시(공정하게)
+ if(fog>.2)for(const e of T.c.ev){if(e.type!=='roller'||e.gone)continue;const dd=e.d-P.d;if(dd>10&&dd<280){const y=Math.max(PY-140,sy(e.d));ttxt('▼ 「'+e.word+'」 굴러온다!',PX,y-14,12,'#ff6b5b')}}
+ // HUD
+ ctx.fillStyle='rgba(16,26,90,.85)';ctx.fillRect(6,6,168,36);ctx.strokeStyle='#f4ecd8';ctx.lineWidth=2;ctx.strokeRect(6,6,168,36);
+ ttxt('외줄 수련 · '+TRIAL.names[st],12,20,11,'#ffd75e','left');
+ for(let i=0;i<T.maxHearts;i++)heart(14+i*14,27,i<T.hearts);
+ ttxt('구슬 '+T.orbs,410,22,13,'#ffd75e','left');
+ // 진행 막대
+ const pr=Math.max(0,Math.min(1,P.d/L));ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(464,50,8,200);ctx.fillStyle='#7be38a';ctx.fillRect(464,50+200*(1-pr),8,200*pr);ctx.strokeStyle='#f4ecd8';ctx.lineWidth=1;ctx.strokeRect(464,50,8,200);ttxt('도착',468,46,10,'#fff');
+ // 균형 계기판
+ const mx=140,mw=200,my=296;
+ ctx.fillStyle='rgba(16,26,90,.9)';ctx.fillRect(mx-8,my-14,mw+16,24);ctx.strokeStyle='#f4ecd8';ctx.strokeRect(mx-8,my-14,mw+16,24);
+ ctx.fillStyle='#c83a2a';ctx.fillRect(mx,my-4,mw,8);ctx.fillStyle='#e8b030';ctx.fillRect(mx+mw*.12,my-4,mw*.76,8);ctx.fillStyle='#3fae5a';ctx.fillRect(mx+mw*.3,my-4,mw*.4,8);
+ const nx=mx+mw/2+Math.max(-1,Math.min(1,P.lean))*mw/2;ctx.fillStyle='#fff';ctx.fillRect(nx-1,my-9,3,18);ctx.fillStyle='#1a0a05';ctx.fillRect(nx-2,my-10,5,2);
+ ttxt('균형',mx-14,my+4,11,'#fff','right');
+ if(T.phase==='run'&&Math.abs(P.lean)>.5&&P.falling<=0&&((t/150)|0)%2)ttxt(P.lean>0?'◀ 왼쪽!':'오른쪽! ▶',P.lean>0?mx-40:mx+mw+40,my-22,16,'#ff6b5b');
+ // 카운트다운·메시지
+ if(T.phase==='count')ttxt(String(Math.ceil(T.count)),PX,150,48,'#ffd75e');
+ if(T.msg&&T.time-T.msg.t<1.3)ttxt(T.msg.text,PX,120,18,T.msg.color);
+}
+// 필드의 깃발 수련터
+function drawTrialPost(X,Y,t){
+ const open=S.talked&&S.shrine&&!S.trial;
+ if(open){ctx.fillStyle=`rgba(255,215,94,${.25+Math.sin(t/160)*.15})`;ctx.beginPath();ctx.arc(X,Y-10,14,0,7);ctx.fill()}
+ ctx.fillStyle='#2a1a0a';ctx.fillRect(X-8,Y-24,3,24);ctx.fillRect(X+5,Y-24,3,24);
+ ctx.fillStyle='#9a6a32';ctx.fillRect(X-7,Y-23,1,23);ctx.fillRect(X+6,Y-23,1,23);
+ ctx.fillStyle='#e8d8a8';ctx.fillRect(X-6,Y-14,12,1);
+ const wave=((t/180)|0)%2;
+ ctx.fillStyle=S.trial?'#3fae5a':'#d8382a';ctx.fillRect(X-5,Y-23,10,8+wave);
+ ctx.fillStyle='#fff6c0';ctx.fillRect(X-3,Y-20,6,1);ctx.fillRect(X-1,Y-21,2,4);
+ ctx.fillStyle='#5a4a3a';ctx.fillRect(X-9,Y-2,18,2);
+}
+</script>
 <script>// 평등의 나라 · 취풍 무협전 — 필드 이동 + 사이드뷰 턴제 전투
 const $=s=>document.querySelector(s);
 const cv=$('#game'),ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
@@ -495,7 +813,7 @@ const W=30,H=20,T=16,KEY='equality-rpg-chwipung-v1';
 const STEP_MS=150;
 
 // ---------- 상태 ----------
-function fresh(){return {stage:0,x:4,y:13,dir:'down',hp:[100,90,130],xp:0,potions:3,kills:[],talked:false,shrine:false,finished:false,pledge:'',sound:true,right:0,wrong:0,defeated:0}}
+function fresh(){return {stage:0,x:4,y:13,dir:'down',hp:[100,90,130],xp:0,potions:3,kills:[],talked:false,shrine:false,finished:false,trial:false,trialFails:0,trialRec:[],pledge:'',sound:true,right:0,wrong:0,defeated:0}}
 let S=fresh();
 try{const a=JSON.parse(localStorage.getItem(KEY));if(a&&Number.isInteger(a.stage)&&a.stage>=0&&a.stage<5&&Array.isArray(a.kills)){S={...S,...a};S.kills=S.kills.filter(v=>Number.isInteger(v)&&v>=0&&v<3);if(!Array.isArray(S.hp)||S.hp.length!==3)S.hp=[100,90,130];S.potions=Math.max(0,Math.min(20,Number(S.potions)||0));S.pledge=String(S.pledge||'').slice(0,300)}}catch{}
 let mode='title',grid=null,mapImg=null,E=null,keys={},path=[],pendingTarget=null,lastMove=0,cooldown=0,now=0,trans=null,dialog=null,B=null,shake=0,floaters=[];
@@ -525,7 +843,7 @@ function makeMap(stage){
  for(let y=2;y<=17;y++){a[y][4]=4;a[y][25]=4}
  for(let y=3;y<6;y++)for(let x=3;x<7;x++)a[y][x]=5;
  if(stage===0||stage===4)for(let y=13;y<16;y++)for(let x=19;x<23;x++)a[y][x]=5;
- for(const [x,y] of [[4,13],[7,11],[10,7],[11,14],[10,8],[11,13],[23,8],[26,4],[24,16]])for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy;if(X>0&&X<W-1&&Y>0&&Y<H-1&&(a[Y][X]===1||a[Y][X]===5&&!(stage===0||stage===4)))a[Y][X]=0}
+ for(const [x,y] of [[4,13],[7,11],[10,7],[11,14],[10,8],[11,13],[23,8],[26,4],[24,16],[21,8]])for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy;if(X>0&&X<W-1&&Y>0&&Y<H-1&&(a[Y][X]===1||a[Y][X]===5&&!(stage===0||stage===4)))a[Y][X]=0}
  // 게이트 주변 진입로
  for(let y=4;y<=8;y++)if(a[y][24]===1)a[y][24]=0;
  return a;
@@ -537,13 +855,14 @@ function entAt(x,y){
  if(E.npc.x===x&&E.npc.y===y)return E.npc;
  if(E.stele.x===x&&E.stele.y===y)return E.stele;
  if(E.gate.x===x&&E.gate.y===y)return E.gate;
+ if(E.trial&&E.trial.x===x&&E.trial.y===y)return E.trial;
  for(const m of E.mobs)if(!S.kills.includes(m.id)&&m.x===x&&m.y===y)return m;
  return null;
 }
 function loadStage(){
  grid=makeMap(S.stage);mapImg=renderMap(S.stage);
  const sh=S.stage%2;
- E={npc:{kind:'npc',x:7,y:11},stele:{kind:'stele',x:24,y:16},gate:{kind:'gate',x:26,y:4},
+ E={npc:{kind:'npc',x:7,y:11},stele:{kind:'stele',x:24,y:16},gate:{kind:'gate',x:26,y:4},trial:{kind:'trial',x:21,y:8},
   mobs:[[0,10,7+sh],[1,11,14-sh],[2,23,8]].map(([id,x,y])=>({kind:'mob',id,x,y,hx:x,hy:y,fx:x,fy:y,t:1,next:0}))};
  if(!walkable(pl.x,pl.y)){pl.x=4;pl.y=13}
  pl.fx=pl.x;pl.fy=pl.y;pl.t=1;
@@ -614,8 +933,9 @@ function questText(){
  const k=[0,1].filter(i=>S.kills.includes(i)).length;
  if(k<2)return `② 떠돌이 요괴 혼내 주기 ${k} / 2<br><span>정답을 외치면 필살기 발동!</span>`;
  if(!S.shrine)return '③ 강 건너 남쪽 비석 조사<br><span>다리를 건너 오른쪽 아래</span>';
- if(!S.kills.includes(2))return `④ ${ENEMY_NAMES[S.stage][2]} 처치<br><span>정답 필살기 3번 필요</span>`;
- return S.stage===4?'⑤ 북동쪽 성문으로!<br><span>마지막 문을 열자</span>':'⑤ 북동쪽 성문으로 이동<br><span>다음 고을로 떠나자</span>';
+ if(!S.trial)return `④ 외줄 수련 · ${TRIAL.names[S.stage]}<br><span>보스 결계 옆 깃발 수련터</span>`;
+ if(!S.kills.includes(2))return `⑤ ${ENEMY_NAMES[S.stage][2]} 처치<br><span>정답 필살기 3번 필요</span>`;
+ return S.stage===4?'⑥ 북동쪽 성문으로!<br><span>마지막 문을 열자</span>':'⑥ 북동쪽 성문으로 이동<br><span>다음 고을로 떠나자</span>';
 }
 function hud(){
  $('#quest').innerHTML=questText();
@@ -670,20 +990,26 @@ function interact(e){
  if(e.kind==='mob'){
   if(!S.talked){say([['sys',`${josa(SCRIPTS[S.stage].npcName,'이/가')} 부르고 있다. 이야기부터 듣고 오자.`]]);return}
   if(e.id===2&&!S.shrine){say([['sys','보라색 봉인 결계가 길을 막고 있다. 강 건너 남쪽 비석을 먼저 조사하자.']]);return}
+  if(e.id===2&&!S.trial){say([['sys','결계가 아직 남아 있다! 바로 옆 깃발 수련터에서 외줄 수련을 통과하면 완전히 풀린다.']]);return}
   startBattle(e);return;
  }
  if(e.kind==='stele'){
   if(!S.talked||!S.kills.includes(0)||!S.kills.includes(1)){say([['sys','비석에 희미한 글씨가 새겨져 있다… 아직 읽을 수 없다. 떠돌이 요괴를 먼저 혼내 주자.']]);return}
   if(S.shrine){say([['sys',`「${STELE_TITLE[S.stage]}」 — ${stages[S.stage].qs[2][3]}`]]);return}
   S.shrine=true;S.potions++;partyIdx().forEach(i=>S.hp[i]=Math.min(maxHp(i),S.hp[i]+30));Music.sfx('chime');save();hud();
-  say([['sys',`수호 비석 · ${stages[S.stage].power}의 가르침\n「${STELE_TITLE[S.stage]}」`],['sys',stages[S.stage].qs[2][3]],['sys',`비석에 빛이 깃들었다! ${josa(ENEMY_NAMES[S.stage][2],'의/의')} 봉인이 풀렸다. (회복약 +1 · 체력 +30)`]],()=>log('봉인이 풀렸다! 보스를 찾아가자.','gold'));
+  say([['sys',`수호 비석 · ${stages[S.stage].power}의 가르침\n「${STELE_TITLE[S.stage]}」`],['sys',stages[S.stage].qs[2][3]],['sys',`비석에 빛이 깃들었다! ${ENEMY_NAMES[S.stage][2]}의 결계가 약해졌다. (회복약 +1 · 체력 +30)`],['sys',`보스 옆 깃발 수련터에서 「외줄 수련 · ${TRIAL.names[S.stage]}」을 통과하면 결계가 완전히 풀린다!`]],()=>log('결계가 약해졌다! 외줄 수련터로 가자.','gold'));
   return;
+ }
+ if(e.kind==='trial'){
+  if(S.trial){say([['sys','이미 통과한 수련터다. 결계는 풀려 있다!']]);return}
+  if(!S.talked||!S.shrine){say([['sys','외줄 수련터다. 아직 수련터 문이 닫혀 있다. 비석을 먼저 조사하자.']]);return}
+  startTrial();return;
  }
  if(e.kind==='gate'){
   if(!S.kills.includes(2)){say([['sys','성문이 굳게 닫혀 있다. 이 고을의 보스를 먼저 물리치자.']]);return}
   Music.sfx('door');
   if(S.stage===4){S.finished=true;save();hud();ending();return}
-  fadeTo(()=>{S.stage++;S.kills=[];S.talked=false;S.shrine=false;pl.x=4;pl.y=13;pl.dir='down';healAll();loadStage();save();chapterCard();Music.play('field')});
+  fadeTo(()=>{S.stage++;S.kills=[];S.talked=false;S.shrine=false;S.trial=false;S.trialFails=0;pl.x=4;pl.y=13;pl.dir='down';healAll();loadStage();save();chapterCard();Music.play('field')});
  }
 }
 function loadStageKeepPos(){const keep=followers;loadStage();followers.forEach(f=>{const o=keep.find(k=>k.i===f.i);if(o)Object.assign(f,{x:o.x,y:o.y,fx:o.fx,fy:o.fy});else{f.x=E.npc.x;f.y=E.npc.y;f.fx=f.x;f.fy=f.y}})}
@@ -704,10 +1030,12 @@ function tryStep(dir){
  if(pl.step%8===0)save();
  return true;
 }
-let lastBump=0;
+let lastBump=0,tapDir=null;
 function updateField(dt){
  if(pl.t<1){pl.t=Math.min(1,pl.t+dt/STEP_MS);if(pl.t<1)return}
  const k=keys;let dir=k.ArrowUp||k.w||k.W?'up':k.ArrowDown||k.s||k.S?'down':k.ArrowLeft||k.a||k.A?'left':k.ArrowRight||k.d||k.D?'right':null;
+ // 아주 짧게 누른 방향키도 놓치지 않기(한 프레임 안에 떼도 한 칸 이동/방향 전환)
+ if(!dir&&tapDir)dir=tapDir;tapDir=null;
  if(dir){path=[];pendingTarget=null;tryStep(dir);hudCoords();return}
  if(path.length){const [nx,ny]=path.shift();const d=nx>pl.x?'right':nx<pl.x?'left':ny>pl.y?'down':'up';if(!tryStep(d)){path=[]}
   if(!path.length&&pendingTarget&&mode==='field'){const t=pendingTarget;pendingTarget=null;if(Math.abs(t.x-pl.x)+Math.abs(t.y-pl.y)===1)interact(t)}}
@@ -741,10 +1069,11 @@ function drawField(t){
  list.push({y:E.stele.y,draw:()=>drawStele(E.stele.x*T+8,E.stele.y*T+16,t)});
  // 성문
  list.push({y:E.gate.y,draw:()=>drawGate(E.gate.x*T+8,E.gate.y*T+16,t)});
+ list.push({y:E.trial.y,draw:()=>drawTrialPost(E.trial.x*T+8,E.trial.y*T+16,t)});
  // 몬스터
  for(const m of E.mobs){if(S.kills.includes(m.id))continue;
   const X=lerp(m.fx,m.x,m.t)*T+8,Y=lerp(m.fy,m.y,m.t)*T+16;const type=ENEMY_TYPES[m.id];
-  list.push({y:m.y,draw:()=>{const bob=Math.sin(t/200+m.id)*1;if(m.id===2){Sprites.draw(ctx,type,'front',X,Y+2,1.4,{stage:st,frame:0});if(!S.shrine){ctx.strokeStyle=`rgba(190,110,255,${.5+Math.sin(t/150)*.3})`;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(X,Y-10,14,15,0,0,Math.PI*2);ctx.stroke()}}else Sprites.draw(ctx,type,'front',X,Y+1+bob,1,{stage:st})}});
+  list.push({y:m.y,draw:()=>{const bob=Math.sin(t/200+m.id)*1;if(m.id===2){Sprites.draw(ctx,type,'front',X,Y+2,1.4,{stage:st,frame:0});if(!S.trial){ctx.strokeStyle=`rgba(190,110,255,${.5+Math.sin(t/150)*.3})`;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(X,Y-10,14,15,0,0,Math.PI*2);ctx.stroke()}}else Sprites.draw(ctx,type,'front',X,Y+1+bob,1,{stage:st})}});
  }
  // 동료 & 주인공
  const pt=pl.t;
@@ -755,7 +1084,7 @@ function drawField(t){
  // 목표 표시
  const goal=currentGoal();if(goal){const bob=Math.sin(t/180)*2;const X=goal.x*T+8,Y=goal.y*T-(goal.kind==='gate'?26:goal.kind==='mob'&&goal.id===2?22:6)+bob;ctx.fillStyle='#2a1a0a';ctx.fillRect(X-4,Y-6,9,5);ctx.fillRect(X-2,Y-1,5,2);ctx.fillStyle='#ffd75e';ctx.fillRect(X-3,Y-5,7,3);ctx.fillRect(X-1,Y-2,3,2)}
 }
-function currentGoal(){if(S.finished)return null;if(!S.talked)return E.npc;const m=E.mobs.find(m=>m.id<2&&!S.kills.includes(m.id));if(m)return m;if(!S.shrine)return E.stele;if(!S.kills.includes(2))return E.mobs[2];return E.gate}
+function currentGoal(){if(S.finished)return null;if(!S.talked)return E.npc;const m=E.mobs.find(m=>m.id<2&&!S.kills.includes(m.id));if(m)return m;if(!S.shrine)return E.stele;if(!S.trial)return E.trial;if(!S.kills.includes(2))return E.mobs[2];return E.gate}
 function drawWalker(key,dir,X,Y,step){
  const pose=dir==='up'?'back':dir==='down'?'front':'side';const frame=step%2;
  Sprites.draw(ctx,key,pose,X,Y+1-(step?frame:0),1,{frame,flip:dir==='right'});
@@ -973,6 +1302,10 @@ function guard(t){
   if(bui.hidden){bui.hidden=false;$('#questbox').hidden=true}
   if(!B.anim&&!choiceAct){B.stuck=B.stuck||t;if(t-B.stuck>1200){B.stuck=0;recoverBattle()}}else B.stuck=0;
  }
+ if(mode==='trial'&&!TR&&!trans){mode='field';$('#trialui').hidden=true;$('#questbox').hidden=false}
+ if(mode!=='trial'&&TR&&!trans){TR=null;$('#trialui').hidden=true}
+ if(mode!=='trial'&&!TR&&!$('#trialui').hidden)$('#trialui').hidden=true;
+ if(TR&&TR.menu&&$('#trialui').hidden)$('#trialui').hidden=false;
  if(mode==='field'&&pl.t>=1&&!walkable(pl.x,pl.y,true)){pl.x=4;pl.y=13;pl.fx=4;pl.fy=13}
 }
 function recoverBattle(){
@@ -990,10 +1323,12 @@ function frame(t){
   if(mode==='field'||mode==='dialog'){for(const m of E.mobs)if(m.t<1)m.t=Math.min(1,m.t+dt/260)}
   if(mode==='dialog'){updateDialog();if(pl.t<1)pl.t=Math.min(1,pl.t+dt/STEP_MS)}
   if(mode==='battle'&&B)updateBattle(t);
+  if(mode==='trial'&&TR&&!trans&&!$('#modal').open)trialUpdate(dt/1000);
   ctx.save();
   try{
    if(shake>0){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.85;if(shake<.4)shake=0}
-   if(mode==='battle'&&B&&$('#battleui').hidden===false)drawBattle(t);
+   if(mode==='trial'&&TR&&TR.shown)drawTrial(t);
+   else if(mode==='battle'&&B&&$('#battleui').hidden===false)drawBattle(t);
    else if(E)drawField(t);
    drawFloaters(t);
   }finally{ctx.restore()}
@@ -1006,6 +1341,7 @@ function act(){
  if($('#modal').open)return;
  if(mode==='dialog'){dialogAdvance();return}
  if(mode==='battle'){battleKey(' ');return}
+ if(mode==='trial'){if(!trans||(TR&&TR.menu))trialKey(' ');return}
  if(mode!=='field'||trans)return;
  const [dx,dy]=DIRS[pl.dir];const e=entAt(pl.x+dx,pl.y+dy)||[[0,1],[1,0],[0,-1],[-1,0]].map(([a,b])=>entAt(pl.x+a,pl.y+b)).find(Boolean);
  if(e)interact(e);else log('주변에 조사할 것이 없다.');
@@ -1016,6 +1352,7 @@ addEventListener('keydown',ev=>{
  const k=ev.key;
  // Enter/Space가 포커스된 버튼까지 눌러 두 번 처리되는 것을 막는다
  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Enter'].includes(k))ev.preventDefault();
+ if(mode==='trial'){if(trans&&!(TR&&TR.menu))return;if(/^(Arrow(Up|Down|Left|Right)|[wasdWASD])$/.test(k))keys[k]=true;if(!ev.repeat)trialKey(k);return}
  if(mode==='battle'){if(!ev.repeat)battleKey(k);return}
  if(k===' '||k==='Enter'){if(!ev.repeat)act();return}
  if(mode==='dialog')return;
@@ -1023,10 +1360,16 @@ addEventListener('keydown',ev=>{
  if(k==='j'||k==='J'){journal();return}
  if(k==='m'||k==='M'){toggleSound();return}
  keys[k]=true;
+ const td={ArrowUp:'up',w:'up',W:'up',ArrowDown:'down',s:'down',S:'down',ArrowLeft:'left',a:'left',A:'left',ArrowRight:'right',d:'right',D:'right'}[k];
+ if(td&&!ev.repeat&&mode==='field'){tapDir=td;if(pl.t>=1)pl.dir=td}
 });
 addEventListener('keyup',ev=>{delete keys[ev.key]});
-addEventListener('blur',()=>keys={});
+addEventListener('blur',()=>{keys={};if(TR&&TR.phase==='run'&&mode==='trial')trialPause()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&TR&&TR.phase==='run'&&mode==='trial')trialPause()});
+const trialRelease=()=>{if(TR)TR.touch=0};
+cv.addEventListener('pointerup',trialRelease);cv.addEventListener('pointercancel',trialRelease);cv.addEventListener('pointerleave',trialRelease);
 cv.addEventListener('pointerdown',ev=>{
+ if(mode==='trial'){if(!TR||trans)return;if(TR.menu){return}if(TR.phase!=='run')return;const r=cv.getBoundingClientRect(),fx=(ev.clientX-r.left)/r.width;if(fx<.38)TR.touch=-1;else if(fx>.62)TR.touch=1;else trialJump();try{cv.setPointerCapture(ev.pointerId)}catch{}return}
  if(mode==='dialog'){dialogAdvance();return}
  if(mode!=='field'||trans)return;
  const r=cv.getBoundingClientRect();const x=Math.floor((ev.clientX-r.left)/r.width*W),y=Math.floor((ev.clientY-r.top)/r.height*H);
@@ -1037,7 +1380,7 @@ cv.addEventListener('pointerdown',ev=>{
 $('#dialog').addEventListener('click',dialogAdvance);
 document.querySelectorAll('[data-move]').forEach(b=>{
  const [dx,dy]=b.dataset.move.split(',').map(Number);const k=dx>0?'ArrowRight':dx<0?'ArrowLeft':dy>0?'ArrowDown':'ArrowUp';
- const down=e=>{e.preventDefault();if(mode==='battle'){battleKey(k);return}keys[k]=true};const up=()=>delete keys[k];
+ const down=e=>{e.preventDefault();if(mode==='battle'){battleKey(k);return}if(mode==='trial'&&TR&&TR.menu){trialKey(k);return}keys[k]=true};const up=()=>delete keys[k];
  b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointerleave',up);b.addEventListener('pointercancel',up);
 });
 $('#abtn').addEventListener('click',act);
@@ -1055,27 +1398,27 @@ function badges(){return stages.map((s,i)=>`<span class="${i<S.stage||(i===S.sta
 function journal(){
  if(S.finished){ending();return}
  const learned=stages.slice(0,S.stage+(S.shrine?1:0)).map((s,i)=>`<p><b style="color:#ffd75e">${s.name} · ${STELE_TITLE[i]}</b><br>${s.qs[2][3]}</p>`).join('')||'<p class="muted">비석을 조사하면 배운 내용이 기록됩니다.</p>';
- openModal(`<h2>바람의 수련 수첩</h2><p>현재: 제${S.stage+1}장 ${stages[S.stage].name}<br>레벨 ${level()} · 경험치 ${S.xp} · 물리친 요괴 ${S.defeated}마리<br>정답 필살기 ${S.right}회 · 오답 ${S.wrong}회</p><div class="badgegrid">${badges()}</div><h2 style="font-size:17px">비석에서 배운 것</h2>${learned}`);
+ openModal(`<h2>바람의 수련 수첩</h2><p>현재: 제${S.stage+1}장 ${stages[S.stage].name}<br>레벨 ${level()} · 경험치 ${S.xp} · 물리친 요괴 ${S.defeated}마리<br>정답 필살기 ${S.right}회 · 오답 ${S.wrong}회</p><div class="badgegrid">${badges()}</div><h2 style="font-size:17px">외줄 수련 기록</h2><p>${TRIAL.names.map((n,i)=>{const r=(S.trialRec||[])[i];return `${n}: ${r?(r.helped?'도사님 도움으로 통과':`통과 · 구슬 ${r.orbs}개 · 떨어짐 ${r.lost}번`):(i===S.stage&&S.trial?'통과':'—')}`}).join('<br>')}</p><h2 style="font-size:17px">비석에서 배운 것</h2>${learned}`);
 }
 $('#journal').onclick=journal;
 function toggleSound(){S.sound=!S.sound;Music.setEnabled(S.sound);save();hud();if(S.sound)Music.sfx('ok')}
 $('#sound').onclick=toggleSound;
-$('#help').onclick=()=>openModal(`<h2>취풍 무협전 안내</h2><p><b>이동</b> 방향키 / WASD · 마우스·터치로 바닥 누르기<br><b>대화·조사</b> Space / Enter (대상을 바라보고)<br><b>전투</b> ↑↓←→ 선택, Space/Enter 결정, 숫자키 1~3 바로 선택<br><b>기타</b> 1 회복약 · J 수련 수첩 · M 소리 켜기/끄기</p><p>요괴에게 닿으면 사이드뷰 전투가 시작됩니다. <b>「필살기」</b>를 고르면 문제가 나오고, 정답을 고르면 동료의 필살기가 터져 100 피해를 줍니다. 떠돌이 요괴는 1번, 보스는 3번 맞혀야 쓰러집니다.</p><p>틀리면 요괴가 반격해 동료 한 명의 체력이 20 줄고 해설이 나옵니다. 해설을 읽고 다시 도전하세요. 모두 쓰러져도 출발 지점에서 회복해 다시 도전할 수 있어요.</p><p class="muted">진행 순서: NPC와 대화 → 떠돌이 요괴 2마리 → 강 건너 남쪽 비석 → 보스 → 북동쪽 성문. 노란 화살표가 다음 목표를 가리킵니다. 2장에서는 보미, 3장에서는 곰돌이 동료가 됩니다.</p>`);
+$('#help').onclick=()=>openModal(`<h2>취풍 무협전 안내</h2><p><b>이동</b> 방향키 / WASD · 마우스·터치로 바닥 누르기<br><b>대화·조사</b> Space / Enter (대상을 바라보고)<br><b>전투</b> ↑↓←→ 선택, Space/Enter 결정, 숫자키 1~3 바로 선택<br><b>기타</b> 1 회복약 · J 수련 수첩 · M 소리 켜기/끄기</p><p>요괴에게 닿으면 사이드뷰 전투가 시작됩니다. <b>「필살기」</b>를 고르면 문제가 나오고, 정답을 고르면 동료의 필살기가 터져 100 피해를 줍니다. 떠돌이 요괴는 1번, 보스는 3번 맞혀야 쓰러집니다.</p><p><b>외줄 수련</b> 장마다 보스 결계 옆 깃발 수련터에서 장대 위를 건넙니다. ←→로 균형(기울어진 반대쪽!), Space 점프, ↑↓ 속도, Esc 일시정지. 굴러오는 통·끊어진 장대·도깨비불·돌풍·안개를 넘어 끝까지 가면 결계가 풀립니다. 실패할수록 쉬워지고, 두 번 실패하면 도움을 받아 통과할 수도 있어요.</p><p>틀리면 요괴가 반격해 동료 한 명의 체력이 20 줄고 해설이 나옵니다. 해설을 읽고 다시 도전하세요. 모두 쓰러져도 출발 지점에서 회복해 다시 도전할 수 있어요.</p><p class="muted">진행 순서: NPC와 대화 → 떠돌이 요괴 2마리 → 강 건너 남쪽 비석 → 외줄 수련 → 보스 → 북동쪽 성문. 노란 화살표가 다음 목표를 가리킵니다. 2장에서는 보미, 3장에서는 곰돌이 동료가 됩니다.</p>`);
 $('#video').onclick=()=>openModal('<h2>학습 영상 · 웰컴 투 디지털 월드</h2><iframe src="https://www.youtube-nocookie.com/embed/kB666Wpu-Ls" title="양성평등 교육 영상" allowfullscreen></iframe><p><a href="https://www.youtube.com/watch?v=kB666Wpu-Ls" target="_blank" rel="noopener">YouTube에서 영상 보기 ↗</a></p>');
 $('#reset').onclick=()=>{openModal('<h2>새 원정을 시작할까요?</h2><p>경험치, 동료, 인장, 약속과 진행이 모두 초기화됩니다.</p><button id="keep">기록 유지</button> <button id="new">초기화하고 시작</button>');$('#keep').onclick=closeModal;$('#new').onclick=()=>{
  const snd=S.sound;S=fresh();S.sound=snd;pl.x=S.x;pl.y=S.y;pl.dir='down';try{localStorage.removeItem(KEY)}catch{}
- closeModal();trans=null;choiceAct=null;B=null;dialog=null;floaters=[];
- $('#battleui').hidden=true;$('#questbox').hidden=false;$('#dialog').hidden=true;
+ closeModal();trans=null;choiceAct=null;B=null;TR=null;dialog=null;floaters=[];
+ $('#battleui').hidden=true;$('#trialui').hidden=true;$('#questbox').hidden=false;$('#dialog').hidden=true;
  if($('#splash')){$('#splash').remove()}
  mode='field';loadStage();chapterCard();Music.play('field');save();log('새 원정을 시작했다.','gold');introHint();cv.focus()}};
 function introHint(){setTimeout(()=>{if(mode==='field'&&!S.talked&&S.stage===0&&!dialog&&!B&&!trans&&!$('#modal').open)say([['baram','하아암~ 잘 잤다. …응? 사부님이 길 위에서 손짓하고 계시네.'],['sys','방향키(WASD)로 걸어가서 Space로 말을 걸자. 노란 화살표가 목표야!']])},1600)}
 function ending(){
  Music.play('ending');
- openModal(`<h2>마지막 장 · 평등의 나라를 되찾다</h2><canvas class="endart" id="endart" width="200" height="56"></canvas><p>다섯 고을의 요괴와 불평등 대마왕을 물리쳤다!<br>바람: "공부로 이기는 무공… 생각보다 멋진데요, 사부님?"<br>허허 도사: "허허, 이제야 알았느냐. 진짜 무공은 일상에서 쓰는 거란다."</p><p>이제 <b style="color:#ffd75e">존중 · 보호 · 자유 · 용기 · 연대</b>의 힘을 현실에서도 펼쳐 보자.</p><div class="badgegrid">${stages.map(s=>`<span class="on">${s.power}</span>`).join('')}</div><p class="muted">레벨 ${level()} · 정답 필살기 ${S.right}회 · 오답 ${S.wrong}회 · 물리친 요괴 ${S.defeated}마리</p><label for="pledge">나의 실천 약속</label><textarea id="pledge" maxlength="300" placeholder="친구를 놀리는 말에 동조하지 않고…">${S.pledge.replace(/</g,'&lt;')}</textarea><p class="muted">개인정보는 적지 마세요. 이 브라우저에만 저장됩니다.</p><button id="promise">약속 저장 · 원정 기록 내려받기</button>`);
+ openModal(`<h2>마지막 장 · 평등의 나라를 되찾다</h2><canvas class="endart" id="endart" width="200" height="56"></canvas><p>다섯 고을의 요괴와 불평등 대마왕을 물리쳤다!<br>바람: "공부로 이기는 무공… 생각보다 멋진데요, 사부님?"<br>허허 도사: "허허, 이제야 알았느냐. 진짜 무공은 일상에서 쓰는 거란다."</p><p>이제 <b style="color:#ffd75e">존중 · 보호 · 자유 · 용기 · 연대</b>의 힘을 현실에서도 펼쳐 보자.</p><div class="badgegrid">${stages.map(s=>`<span class="on">${s.power}</span>`).join('')}</div><p class="muted">레벨 ${level()} · 정답 필살기 ${S.right}회 · 오답 ${S.wrong}회 · 물리친 요괴 ${S.defeated}마리 · 외줄 수련 구슬 ${(S.trialRec||[]).reduce((a,r)=>a+(r&&r.orbs||0),0)}개</p><label for="pledge">나의 실천 약속</label><textarea id="pledge" maxlength="300" placeholder="친구를 놀리는 말에 동조하지 않고…">${S.pledge.replace(/</g,'&lt;')}</textarea><p class="muted">개인정보는 적지 마세요. 이 브라우저에만 저장됩니다.</p><button id="promise">약속 저장 · 원정 기록 내려받기</button>`);
  const c=$('#endart'),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.fillStyle='#1a2a6a';g.fillRect(0,0,200,56);g.fillStyle='#ffd75e';for(let i=0;i<30;i++)g.fillRect((i*53)%200,(i*29)%30,1,1);
  g.fillStyle='#3a6a3a';g.fillRect(0,46,200,10);
  [['master',40],['baram',80],['bomi',112],['gomdol',144]].forEach(([k,x])=>{const img=Sprites.get(k,'front',0,0);g.drawImage(img,x-img.width,48-img.height*2,img.width*2,img.height*2)});
- $('#promise').onclick=()=>{S.pledge=$('#pledge').value.trim().slice(0,300);save();const url=URL.createObjectURL(new Blob([`평등의 나라 · 취풍 무협전 원정 기록\n완료: 5개 고을 / 수호 인장 5개\n레벨 ${level()} · 경험치 ${S.xp}\n정답 필살기 ${S.right}회 · 오답 ${S.wrong}회 · 물리친 요괴 ${S.defeated}마리\n배운 힘: 존중 · 보호 · 자유 · 용기 · 연대\n나의 약속: ${S.pledge}`],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='평등의나라_원정기록.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('#promise').textContent='약속 저장 완료 · 다시 내려받기'};
+ $('#promise').onclick=()=>{S.pledge=$('#pledge').value.trim().slice(0,300);save();const url=URL.createObjectURL(new Blob([`평등의 나라 · 취풍 무협전 원정 기록\n완료: 5개 고을 / 수호 인장 5개\n레벨 ${level()} · 경험치 ${S.xp}\n정답 필살기 ${S.right}회 · 오답 ${S.wrong}회 · 물리친 요괴 ${S.defeated}마리\n외줄 수련: ${TRIAL.names.map((n,i)=>{const r=(S.trialRec||[])[i];return n+(r?(r.helped?'(도움)':`(구슬 ${r.orbs})`):'')}).join(', ')}\n배운 힘: 존중 · 보호 · 자유 · 용기 · 연대\n나의 약속: ${S.pledge}`],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='평등의나라_원정기록.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('#promise').textContent='약속 저장 완료 · 다시 내려받기'};
 }
 
 // ---------- 타이틀 ----------
@@ -1088,6 +1431,7 @@ $('#play').onclick=()=>{
 };
 document.fonts&&document.fonts.ready.then(titleArt);titleArt();
 // 저장된 체력이 모두 0이거나 비정상이면 회복
+if(typeof S.trial!=='boolean')S.trial=S.kills.includes(2);S.trialFails=Math.max(0,Math.min(9,Number(S.trialFails)||0));if(!Array.isArray(S.trialRec))S.trialRec=[];
 S.hp=S.hp.map((v,i)=>Math.max(0,Math.min(maxHp(i),Number.isFinite(+v)?+v:maxHp(i))));
 if(!partyIdx().some(i=>S.hp[i]>0))healAll();
 // 마우스로 누른 버튼에 포커스가 남아 키 입력을 가로채지 않도록
@@ -1095,7 +1439,7 @@ document.querySelectorAll('nav button,.hotkeys button').forEach(b=>b.addEventLis
 grid=makeMap(S.stage);mapImg=renderMap(S.stage);
 loadStage();hud();
 requestAnimationFrame(frame);
-window.__game={get dialog(){return dialog},get choiceAct(){return choiceAct},get trans(){return trans},get S(){return S},get mode(){return mode},get B(){return B},get E(){return E},pl,interact,startBattle,bAnswer,walkable,bfs,makeMap,get grid(){return grid},loadStage};
+window.__game={get TR(){return TR},startTrial,get keys(){return keys},get dialog(){return dialog},get choiceAct(){return choiceAct},get trans(){return trans},get S(){return S},get mode(){return mode},get B(){return B},get E(){return E},pl,interact,startBattle,bAnswer,walkable,bfs,makeMap,get grid(){return grid},loadStage};
 </script>
 <script id="font-license" type="text/plain">Copyright (c) 2017-2021, Eunbin Jeong (Dalgona.) <project-neodgm@dalgona.dev>
 with Reserved Font Name "Neo둥근모",

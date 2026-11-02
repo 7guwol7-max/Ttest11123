@@ -60,6 +60,13 @@ nav button:hover,.hotkeys button:hover,dialog button:hover{filter:brightness(1.2
 .pm .bar i{position:absolute;inset:0;background:linear-gradient(90deg,#3fd06a,#a8f07a);transform-origin:left}
 .pm.low .bar i{background:linear-gradient(90deg,#e24a3b,#ff9a6b)}
 .pm span{font-size:.85em;color:var(--muted)}
+/* 외줄 수련 패널 */
+.trialui{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#0007;z-index:4}
+.tpanel{width:min(76cqw,600px);padding:2cqw 2.6cqw;font-size:clamp(11px,1.95cqw,18px);line-height:1.6}
+.tpanel h3{margin:0 0 .4em;color:var(--gold);font-weight:normal;font-size:1.25em}
+.tpanel p{margin:.45em 0}
+.tpanel b{color:var(--gold);font-weight:normal}
+.tpanel .keys{color:#ffe9a8}
 /* 챕터 카드 */
 .chapter{position:absolute;inset:0;background:#000d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5cqw;animation:fade 2.6s ease forwards;pointer-events:none;z-index:5}
 .chapter small{color:var(--muted);font-size:clamp(12px,2.2cqw,20px);letter-spacing:.3em}
