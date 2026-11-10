@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="6학년 국어 「소중한 우리말」 낱말 30개를 익히는 우리말 퀴즈 RPG">
+<title>우리말 수련기</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="stage">
+  <canvas id="screen" width="320" height="240"></canvas>
+  <div id="ui"></div>
+  <div id="fader"></div>
+  <button id="muteBtn" type="button">소리 켬</button>
+</div>
+
+<div id="touch" aria-hidden="true">
+  <div class="dpad">
+    <button type="button" class="pb up" data-dir="up">▲</button>
+    <button type="button" class="pb left" data-dir="left">◀</button>
+    <button type="button" class="pb right" data-dir="right">▶</button>
+    <button type="button" class="pb down" data-dir="down">▼</button>
+  </div>
+  <div class="abtns">
+    <button type="button" class="pb b" data-act="cancel">메뉴</button>
+    <button type="button" class="pb a" data-act="ok">확인</button>
+  </div>
+</div>
+
+<noscript>이 게임은 자바스크립트가 켜져 있어야 실행됩니다.</noscript>
+
+<script src="js/quizData.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/art.js"></script>
+<script src="js/data.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/quiz.js"></script>
+<script src="js/town.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
